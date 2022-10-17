@@ -76,7 +76,8 @@ Once your PR has been approved
 Once GitHub says `able to merge`, merge your PR's feature branch into the `main` branch by running
 * `git checkout main`
 * `git pull` to make sure you are on the latest commit of the `main` branch
-* `git merge --squash <feature-branch-name>` to squash all the commits on your feature branch into one commit on the `main` branch
+* `git merge --squash <feature-branch-name>` to squash all the commits on your feature branch into staged changes on the `main` branch
+* `git commit` to commit the changes
 * Make sure the title of the commit is the name of your feature branch with the PR number in the form of `#<PR number>`, e.g. `Setup repo CI/CD #1`
 * Add a description of your changes if necessary
 * Merge the PR

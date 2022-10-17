@@ -83,22 +83,13 @@ For each revision of your PR in response to feedback, put your changes in an add
 * Notify the reviewer that you have made changes to your PR
 
 Once your PR has been approved
-* Make sure GitHub says `able to merge`, if not rebase onto the latest commit of the `main` branch
+* Make sure GitHub says `able to merge`, if not, go to the "Occasionally rebase onto the latest commit of the `main` branch to keep your feature branch up-to-date" section above
 
-Once GitHub says `able to merge`, merge your PR's feature branch into the `main` branch by either
+Once GitHub says `able to merge`, merge your PR's feature branch into the `main` branch by
 * Setting the green merge button to `Squash and merge` and clicking on the green `Merge pull request` button
 * Keep the default title (should be the name of your feature branch and a link to the PR in the form of `#<PR number>`, e.g. `Setup repo CI/CD (#1)`)
 * Add a description of your changes if necessary
 * Click on the green `Confirm squash and merge` button
-
-Or doing it through the CLI by running
-* `git checkout main`
-* `git pull` to make sure you are on the latest commit of the `main` branch
-* `git merge --squash <feature-branch-name>` to squash all the commits on your feature branch into staged changes on the `main` branch
-* `git commit` to commit the changes
-* Make sure the title of the commit is the name of your feature branch with the PR number in the form of `#<PR number>`, e.g. `Setup repo CI/CD #1`
-* Add a description of your changes if necessary
-* Merge the PR
 
 Finally, clean up by
 * Deleting your feature branch from the PR page on GitHub

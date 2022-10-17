@@ -30,7 +30,7 @@ Make your commits to this branch until your feature is complete (remember to add
 * `git push` occasionally to back up your changes on GitHub and show your current progress to the team
 
 You can update the latest commit without adding a new commit by running
-* Run `git add <file>` to add files you want to commit
+* `git add <file>` to add files you want to commit
 * `git commit --amend --no-edit`
 * `git push -f`
 
@@ -133,5 +133,3 @@ To test your Dockerfile, run
 To remove the Docker container forcefully, run
 * `docker ps` to get the container ID
 * `docker rm -f <container-id>` to remove the container
-
-# Revised something

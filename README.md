@@ -122,3 +122,14 @@ Clean up locally by running
 * `git branch -d <feature-branch-name>` to delete your feature branch from your local repository
 * `git remote prune origin` to remove the remote branch from your local repository
 * `git branch` to make sure your local and remote feature branches have been deleted
+
+
+## Testing Dockerfile
+
+To test your Dockerfile, run
+* `docker build -t <image-name> .` to build the Docker image
+* `docker run -dp 3000:80 <image-name>` to run the Docker image
+
+To remove the Docker container forcefully, run
+* `docker ps` to get the container ID
+* `docker rm -f <container-id>` to remove the container

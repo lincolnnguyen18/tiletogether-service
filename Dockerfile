@@ -7,4 +7,5 @@ RUN npm install
 COPY . .
 
 EXPOSE 80
-CMD [ "node", "app.js" ]
+ENV NODE_ENV=production
+CMD [ "node", "index.js" ]

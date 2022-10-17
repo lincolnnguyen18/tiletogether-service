@@ -79,19 +79,22 @@ Finally, create a pull request on GitHub from your feature branch to the `main` 
 * Add a description of your changes if necessary
 * Choose one person on the team to review your PR
 * Assign yourself as the assignee
-* Select `tiletogether-service`  as the project
-* Select `Add APIs to tile-together service` as the milestone
+* Select `tiletogether-service` in the `Projects` section on the right
+* Select `Add APIs to tile-together service` in the `Milestones` section
+* Select your item from the GitHub project board in the `Development` section
 * Click on the green `Create pull request` button
 
 For each revision of your PR in response to feedback, put your changes in an additional commit on your feature branch
 * Name the additional commit with the feature you are working on and the revision number (starting from revision 1), e.g. `Setup repo CI/CD (revision 1)`
-* Push your changes to your feature branch on GitHub by running `git push`
+* Push your revision to your feature branch on GitHub by running `git push`
 * Notify the reviewer that you have made changes to your PR
 
 Once your PR has been approved
 * Make sure GitHub says `able to merge`, if not, go to the "Occasionally rebase onto the latest commit of the `main` branch to keep your feature branch up-to-date" section above
 * Make sure you have no uncommitted changes on your feature branch by running `git status`
 * Make sure all tests have passed and GitHub says `All checks have passed`
+  * You will have to wait for GitHub Actions to finish running the tests and occasionally refresh the PR page
+  * Once the PR is created, these tests are run on every push to your feature branch (PR revisions)
 
 Once GitHub says `able to merge`, merge your PR's feature branch into the `main` branch by
 * Setting the green merge button to `Squash and merge` and clicking on the green `Merge pull request` button

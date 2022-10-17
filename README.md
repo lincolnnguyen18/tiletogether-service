@@ -63,7 +63,17 @@ For each revision of your PR in response to feedback, put your changes in an add
 * Push your changes to your feature branch on GitHub by running `git push`
 * Notify the reviewer that you have made changes to your PR
 
-Once your PR has been approved, merge it into the `main` branch by running
+Occasionally rebase onto the latest commit of the `main` branch to keep your feature branch up to date
+* `git fetch` to get the latest commits from the remote
+* `git checkout main` and `git pull` to get the latest commits from the remote for the `main` branch
+* `git checkout <feature-branch-name>` to go back to your feature branch
+* `git rebase main` while being checked out on your feature branch's latest revision
+* Resolve any merge conflicts
+
+Once your PR has been approved
+* Make sure GitHub says `able to merge`, if not rebase onto the latest commit of the `main` branch
+
+Once GitHub says `able to merge`, merge your PR's feature branch into the `main` branch by running
 * `git checkout main`
 * `git pull` to make sure you are on the latest commit of the `main` branch
 * `git merge --squash <feature-branch-name>` to squash all the commits on your feature branch into one commit on the `main` branch

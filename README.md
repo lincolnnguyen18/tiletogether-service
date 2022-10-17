@@ -28,8 +28,9 @@ You can edit a message located on any commit of your feature branch by running
 * An editor will open for each of the commits you want to edit, edit and save for each commit
 
 Once you are ready to have your code reviewed, if you have more than one commit in your feature branch, squash all the commits on your feature branch into one commit by running
+* `git fetch` to get the latest commits from the remote
 * `git rebase -i main` while being checked out on your feature branch
-* Change `pick` to `squash` or `s` for all the commits you want to squash while keeping the first commit as `pick`
+* Change `pick` to `squash` or `s` for all commits but the first one
 * Save and exit
 * Resolve any merge conflicts
 * View merge conflicts with `git status`, they are in the form of `both modified: <file>` under `Unmerged paths`

@@ -1,8 +1,11 @@
-const { Stack, aws_ecs, aws_ecr, aws_iam } = require('aws-cdk-lib');
+const { Stack } = require('aws-cdk-lib');
 const { Vpc, SubnetType } = require('aws-cdk-lib/aws-ec2');
 const { ApplicationLoadBalancer } = require('aws-cdk-lib/aws-elasticloadbalancingv2');
-const { ServicePrincipal, ManagedPolicy } = require('aws-cdk-lib/aws-iam');
+const { ServicePrincipal, ManagedPolicy, Role } = require('aws-cdk-lib/aws-iam');
 const { ApplicationLoadBalancedFargateService } = require('aws-cdk-lib/aws-ecs-patterns');
+const { ContainerImage } = require('aws-cdk-lib/aws-ecs');
+const { Repository } = require('aws-cdk-lib/aws-ecr');
+const { Cluster } = require('aws-cdk-lib/aws-ecs');
 
 class AwsCdkFargateStack extends Stack {
   constructor(scope, id, props) {
@@ -33,13 +36,13 @@ class AwsCdkFargateStack extends Stack {
       },
     });
 
-    const cluster = new aws_ecs.Cluster(this, 'tiletogether-service-cluster', {
+    const cluster = new Cluster(this, 'tiletogether-service-cluster', {
       vpc,
       clusterName: 'tiletogether-service-cluster',
     });
 
-    const executionRole = new aws_iam.Role(this, 'tiletogether-service-execution-role', {
-      assumedBy: new ServicePrincipal('ecs-tasks.amazonaws.com'),
+    const executionRole = new Role(this, 'tiletogether-service-execution-role', {
+    assumedBy: new ServicePrincipal('ecs-tasks.amazonaws.com'),
       managedPolicies: [
         ManagedPolicy.fromAwsManagedPolicyName(
           'service-role/AmazonECSTaskExecutionRolePolicy'
@@ -47,12 +50,12 @@ class AwsCdkFargateStack extends Stack {
       ],
     });
 
-    new aws_ecr.Repository(this, 'tiletogether-service-repo', {
+    new Repository(this, 'tiletogether-service-repo', {
       repositoryName: 'tiletogether-service-repo',
     });
 
     const taskImageOptions = {
-      image: aws_ecs.ContainerImage.fromRegistry('amazon/amazon-ecs-sample'),
+      image: ContainerImage.fromRegistry('amazon/amazon-ecs-sample'),
       containerName: 'tiletogether-service-task-image-container',
       family: 'tiletogether-service-task-image-family',
       containerPort: 80,

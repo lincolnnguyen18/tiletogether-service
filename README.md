@@ -12,6 +12,8 @@
 
 ## Workflow
 
+### Setup feature branch
+
 Make sure you are checked out on the latest commit of the `main` branch
 * `git checkout main`
 * `git pull`
@@ -19,6 +21,8 @@ Make sure you are checked out on the latest commit of the `main` branch
 If you are working on a new feature, create a new branch off of `main` and name it after your feature, eg. `setup-repo-ci-cd`, by running
 * `git checkout -b <feature-name>`
 * `git push -u origin <feature-name>`
+
+### Work on feature
 
 Make your commits to this branch until your feature is complete (remember to add tests) by running
 * `git add <file>` to add files you want to commit
@@ -42,6 +46,8 @@ You can edit a message located on any commit of your feature branch by running
 * Change `pick` to `reword` or `r` for the commits you want to edit
 * Save and exit
 * An editor will open for each of the commits you want to edit, edit and save for each commit
+
+### Publish PR
 
 Once you are ready to have your code reviewed, run
 * `git fetch` to get the latest commits from the remote
@@ -84,10 +90,14 @@ Finally, create a pull request on GitHub from your feature branch to the `main` 
 * Select your item from the GitHub project board in the `Development` section
 * Click on the green `Create pull request` button
 
+### Revise PR
+
 For each revision of your PR in response to feedback, put your changes in an additional commit on your feature branch
 * Name the additional commit with the feature you are working on and the revision number (starting from revision 1), e.g. `Setup repo CI/CD (revision 1)`
 * Push your revision to your feature branch on GitHub by running `git push`
 * Notify the reviewer that you have made changes to your PR
+
+### Merge PR
 
 Once your PR has been approved
 * Make sure GitHub says `able to merge`, if not, go to the "Occasionally rebase onto the latest commit of the `main` branch to keep your feature branch up-to-date" section above
@@ -103,6 +113,8 @@ Once GitHub says `able to merge`, merge your PR's feature branch into the `main`
 * Click on the green `Confirm squash and merge` button
 * GitHub should say `Pull request successfully merged and closed`
 * Click on the `Delete branch` button next to it to delete your successfully merged feature branch
+
+### Cleanup feature branch
 
 Clean up locally by running
 * `git checkout main` to leave your feature branch

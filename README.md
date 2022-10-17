@@ -30,7 +30,7 @@ Make your commits to this branch until your feature is complete (remember to add
 * `git push` occasionally to back up your changes on GitHub and show your current progress to the team
 
 You can update the latest commit without adding a new commit by running
-* Run `git add <file>` to add files you want to commit
+* `git add <file>` to add files you want to commit
 * `git commit --amend --no-edit`
 * `git push -f`
 
@@ -124,14 +124,12 @@ Clean up locally by running
 * `git branch` to make sure your local and remote feature branches have been deleted
 
 
-## Testing Dockerfile
+## Building and running Docker container
 
-To test your Dockerfile, run
+To build and run your Dockerfile, run
 * `docker build -t <image-name> .` to build the Docker image
-* `docker run -dp 3000:80 <image-name>` to run the Docker image
+* `docker run -dp 3000:80 <image-name>` to connect to the server that is running on port 80 in the container from port 3000 on your machine
 
 To remove the Docker container forcefully, run
 * `docker ps` to get the container ID
 * `docker rm -f <container-id>` to remove the container
-
-# Revised something

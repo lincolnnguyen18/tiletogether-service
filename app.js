@@ -1,6 +1,7 @@
-import dotenv from 'dotenv';
+ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+import { UserRouter } from './resources/user/userController.js';
 dotenv.config({ path: `./.env.${process.env.NODE_ENV}` });
 
 export const app = express();
@@ -9,6 +10,8 @@ if (process.env.NODE_ENV === 'development') {
 }
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use('/api/users', UserRouter);
 
 app.get('/health', (req, res) => {
   res.status(200).send('OK');

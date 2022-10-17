@@ -84,6 +84,8 @@ For each revision of your PR in response to feedback, put your changes in an add
 
 Once your PR has been approved
 * Make sure GitHub says `able to merge`, if not, go to the "Occasionally rebase onto the latest commit of the `main` branch to keep your feature branch up-to-date" section above
+* Make sure you have no uncommitted changes on your feature branch by running `git status`
+* Make sure all tests have passed and GitHub says `All checks have passed`
 
 Once GitHub says `able to merge`, merge your PR's feature branch into the `main` branch by
 * Setting the green merge button to `Squash and merge` and clicking on the green `Merge pull request` button

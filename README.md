@@ -124,7 +124,7 @@ Clean up locally by running
 * `git branch` to make sure your local and remote feature branches have been deleted
 
 
-## Testing Dockerfile
+## Building and running Docker container
 
 To test your Dockerfile, run
 * `docker build -t <image-name> .` to build the Docker image

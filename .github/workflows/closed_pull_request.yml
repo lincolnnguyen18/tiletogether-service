@@ -24,7 +24,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Download task definition
-        run: aws ecs describe-task-definition --task-definition tiletogether-service-task-image-family --query taskDefinition > task-definition.json
+        run: aws ecs describe-task-definition --task-definition tiletogether-service-task-image-family --region us-east-1 --query taskDefinition > task-definition.json
 
       - name: Build, tag, and push image to AWS
         id: build-image

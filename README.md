@@ -33,3 +33,5 @@ Create a pull request and assign one of the other team members to review your PR
 On each revision of your pull request, give your revision the same name as the first commit and also add the revision number, e.g. `setup-repo-ci-cd (revision 1)` 
 Once your PR is approved, `Squash and merge` your PR into the `main` branch from the GitHub website, give the squashed commmit the same name as the branch, e.g. `setup-repo-ci-cd`, the first line of the commit message/description should be a link to the approved PR, and then below that a short summary of all the changes made in the PR
 Delete the branch you created for your feature
+
+Main updates

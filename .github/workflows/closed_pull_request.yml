@@ -17,14 +17,14 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::542773719222:role/github-actions-role
-          aws-region: us-east-2
+          aws-region: us-east-1
 
       - name: Login to AWS ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Download task definition
-        run: aws ecs describe-task-definition --task-definition tiletogether-service-task-image-family --region us-east-2 > task-definition.json
+        run: aws ecs describe-task-definition --task-definition tiletogether-service-task-image-family --region us-east-1 > task-definition.json
 
       - name: Build, tag, and push image to AWS
         id: build-image

@@ -47,9 +47,10 @@ Once you are ready to have your code reviewed, run
 * `git checkout <feature-branch-name>` to make sure you are on the latest commit of your feature branch
 * `git status` to make sure you have no uncommitted changes
 * `git rebase -i main` while being checked out on your feature branch
-* Change `pick` to `squash` or `s` for all commits but the first one (if you have multiple commits)
+* Keep the first commit (first line) as `pick` and change all other commits to `squash` or `s`
 * Save and exit
-* Resolve any merge conflicts
+
+If there are any merge conflicts, resolve them
 * View merge conflicts with `git status`, they are in the form of `both modified: <file>` under `Unmerged paths`
 * Open each file with merge conflicts, resolve them, and run `git add <file>`
 * Once all merge conflicts are resolved, run `git rebase --continue`
@@ -66,8 +67,9 @@ Finally, create a pull request on GitHub from your feature branch to the `main` 
 * Go to your feature branch
 * Open a pull request to `main`
 * The PR should say `Able to merge. These branches can be automatically merged.`
+* If not, go to the "Occasionally rebase onto the latest commit of the `main` branch to keep your feature branch up-to-date" section above
 * Scroll down and review your changes
-* Keep the default title (should be the name of your feature branch and a link to the PR in the form of `#<PR number>`, e.g. `Setup repo CI/CD (#1)`)
+* Keep the default title
 * Add a description of your changes if necessary
 * Choose one person on the team to review your PR
 * Assign yourself as the assignee

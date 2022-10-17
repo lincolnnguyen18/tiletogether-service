@@ -16,10 +16,25 @@ Make sure you are checked out on the latest commit of the `main` branch
 * `git checkout main`
 
 If you are working on a new feature, create a new branch off of `main` and name it after your feature, eg. `setup-repo-ci-cd`, by running
-* `git checkout -b setup-repo-ci-cd`
-* `git push -u origin setup-repo-ci-cd`
+* `git checkout -b <feature-name>`
+* `git push -u origin <feature-name>`
 
-Make your commits to this branch until your feature is complete (remember to add tests)
+Make your commits to this branch until your feature is complete (remember to add tests) by running
+* `git add <file>` to add files you want to commit
+* `git commit -m "<commit message>"` to commit your changes
+* `git push` occasionally to back up your changes on GitHub and show your current progress to the team
+
+You can update the latest commit without adding a new commit by running
+* Run `git add <file>` to add files you want to commit
+* `git commit --amend --no-edit`
+* `git push -f`
+
+Occasionally rebase onto the latest commit of the `main` branch to keep your feature branch up to date
+* `git fetch` to get the latest commits from the remote
+* `git checkout main` and `git pull` to get the latest commits from the remote for the `main` branch
+* `git checkout <feature-branch-name>` to go back to your feature branch
+* `git rebase main` while being checked out on your feature branch's latest revision
+* Resolve any merge conflicts
 
 You can edit a message located on any commit of your feature branch by running
 * `git rebase -i HEAD~<number of commits you want to edit>`
@@ -27,10 +42,12 @@ You can edit a message located on any commit of your feature branch by running
 * Save and exit
 * An editor will open for each of the commits you want to edit, edit and save for each commit
 
-Once you are ready to have your code reviewed, if you have more than one commit in your feature branch, squash all the commits on your feature branch into one commit by running
+Once you are ready to have your code reviewed, run
 * `git fetch` to get the latest commits from the remote
+* `git checkout <feature-branch-name>` to make sure you are on the latest commit of your feature branch
+* `git status` to make sure you have no uncommitted changes
 * `git rebase -i main` while being checked out on your feature branch
-* Change `pick` to `squash` or `s` for all commits but the first one
+* Change `pick` to `squash` or `s` for all commits but the first one (if you have multiple commits)
 * Save and exit
 * Resolve any merge conflicts
 * View merge conflicts with `git status`, they are in the form of `both modified: <file>` under `Unmerged paths`
@@ -50,7 +67,7 @@ Finally, create a pull request on GitHub from your feature branch to the `main` 
 * Open a pull request to `main`
 * The PR should say `Able to merge. These branches can be automatically merged.`
 * Scroll down and review your changes
-* Keep the default title (should be the name of your feature branch and a link to the PR in the form of `#<PR number>`)
+* Keep the default title (should be the name of your feature branch and a link to the PR in the form of `#<PR number>`, e.g. `Setup repo CI/CD (#1)`)
 * Add a description of your changes if necessary
 * Choose one person on the team to review your PR
 * Assign yourself as the assignee
@@ -63,17 +80,16 @@ For each revision of your PR in response to feedback, put your changes in an add
 * Push your changes to your feature branch on GitHub by running `git push`
 * Notify the reviewer that you have made changes to your PR
 
-Occasionally rebase onto the latest commit of the `main` branch to keep your feature branch up to date
-* `git fetch` to get the latest commits from the remote
-* `git checkout main` and `git pull` to get the latest commits from the remote for the `main` branch
-* `git checkout <feature-branch-name>` to go back to your feature branch
-* `git rebase main` while being checked out on your feature branch's latest revision
-* Resolve any merge conflicts
-
 Once your PR has been approved
 * Make sure GitHub says `able to merge`, if not rebase onto the latest commit of the `main` branch
 
-Once GitHub says `able to merge`, merge your PR's feature branch into the `main` branch by running
+Once GitHub says `able to merge`, merge your PR's feature branch into the `main` branch by either
+* Setting the green merge button to `Squash and merge` and clicking on the green `Merge pull request` button
+* Keep the default title (should be the name of your feature branch and a link to the PR in the form of `#<PR number>`, e.g. `Setup repo CI/CD (#1)`)
+* Add a description of your changes if necessary
+* Click on the green `Confirm squash and merge` button
+
+Or doing it through the CLI by running
 * `git checkout main`
 * `git pull` to make sure you are on the latest commit of the `main` branch
 * `git merge --squash <feature-branch-name>` to squash all the commits on your feature branch into staged changes on the `main` branch
@@ -81,4 +97,8 @@ Once GitHub says `able to merge`, merge your PR's feature branch into the `main`
 * Make sure the title of the commit is the name of your feature branch with the PR number in the form of `#<PR number>`, e.g. `Setup repo CI/CD #1`
 * Add a description of your changes if necessary
 * Merge the PR
-* Delete your feature branch by running `git checkout main`, `git branch -d <feature-name>` and `git push origin --delete <feature-name>`
+
+Finally, clean up by
+* Deleting your feature branch from the PR page on GitHub
+* Running `git remote prune origin` to remove the remote branch from your local repository
+* Running `git branch -d <feature-branch-name>` to delete your feature branch from your local repository

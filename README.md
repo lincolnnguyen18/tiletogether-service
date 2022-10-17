@@ -4,9 +4,9 @@
 1. Install Node.js and MongoDB
 2. Make sure your Git CLI is authenticated with GitHub
 3. Clone this repository
-4. Run `npm install` in the root directory 
-5. Make sure MongoDB is running on port 27017 
-6. Run `npm run dev` in the root directory 
+4. Run `npm install` in the root directory
+5. Make sure MongoDB is running on port 27017
+6. Run `npm run dev` in the root directory
 7. Go to `localhost:3001/health` to see if the server is running
 8. Run `npm run test` to run the tests
 
@@ -55,13 +55,12 @@ For each revision of your PR in response to feedback, put your changes in an add
 2. Push your changes to your feature branch on GitHub by running `git push`
 3. Notify the reviewer that you have made changes to your PR
 
-Once your PR has been approved, merge it into the `main` branch by going your PR on the GitHub website then
-1. Setting the merge mode on the green button to `Squash and merge` and clicking it
-2. Link the PR in the first line of the commit message
-3. Add a description of all your changes in the PR below that if necessary
-4. Click on the green `Confirm squash and merge` button
-5. Keep the default title (should be the name of your feature branch and a link to the PR in the form of `#<PR number>`)
-6. Add a description of your changes if necessary
+Once your PR has been approved, merge it into the `main` branch by running
+1. `git checkout main`
+2. `git pull` to make sure you are on the latest commit of the `main` branch
+3. `git merge --squash <feature-branch-name>` to squash all the commits on your feature branch into one commit on the `main` branch
+3. Make sure the title of the commit is the name of your feature branch with the PR number in the form of `#<PR number>`, e.g. `Setup repo CI/CD #1`
+5. Add a description of your changes if necessary
 7. Merge the PR
 8. Delete your feature branch by running `git checkout main`, `git branch -d <feature-name>` and `git push origin --delete <feature-name>`
 

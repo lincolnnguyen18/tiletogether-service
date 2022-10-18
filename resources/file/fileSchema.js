@@ -94,4 +94,4 @@ const FileSchema = new Schema({
 
 const File = mongoose.model('File', FileSchema);
 
-module.exports = { UserSchema, File };
+module.exports = { FileSchema, File };

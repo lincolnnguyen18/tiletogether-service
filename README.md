@@ -6,9 +6,22 @@
 3. Clone this repository
 4. Run `npm install` in the root directory
 5. Make sure MongoDB is running on port 27017
-6. Run `npm run dev` in the root directory
+6. Run `npm run start` in the root directory
 7. Go to `localhost:3001/health` to see if the server is running
 8. Run `npm run test` to run the tests
+
+## Reviewing a PR
+
+Git clone the PR branch by running
+`git clone <tiletogether-repo-url> -b <pr-branch-name>`
+
+Run some of the commands below to make sure the PR is safe to merge
+* `npm install`
+* `npm run test`
+* `npm run start`
+* curl `localhost:3001/health` (once the server is running)
+
+Once the serving is running, you can go to `localhost:3001/health` to see if the server is running
 
 ## Workflow
 

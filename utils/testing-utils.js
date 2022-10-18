@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import axios from 'axios';
-dotenv.config({ path: `./.env.testing` });
+dotenv.config({ path: './.env.testing' });
 
 function wait (ms) {
   return new Promise(resolve => setTimeout(resolve, ms));

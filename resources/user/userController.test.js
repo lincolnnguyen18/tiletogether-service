@@ -13,7 +13,7 @@ describe('Connect to MongoDB', () => {
   });
 
   afterAll(async () => {
-    await User.deleteOne({ username: user.username })
+    await User.deleteOne({ username: user.username });
     await teardownApp(server, mongoose);
   });
 

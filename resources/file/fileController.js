@@ -1,7 +1,7 @@
 const express = require('express');
 const { File } = require('./fileSchema.js');
 
-const FileRouter = express.Router();
+export const FileRouter = express.Router();
 
 FileRouter.post('/', getCommunityFiles);
 FileRouter.get('/search/', search);
@@ -18,5 +18,3 @@ async function search(req, res) {
 async function getUserFiles(req, res) {
 
 }
-
-module.exports = FileRouter;

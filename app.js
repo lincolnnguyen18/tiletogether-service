@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/users', UserRouter);
-app.use('/api/files', UserRouter);
+app.use('/api/files', FileRouter);
 
 app.get('/health', (_, res) => {
   res.status(200).send('OK');

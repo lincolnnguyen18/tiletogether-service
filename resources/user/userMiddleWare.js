@@ -1,6 +1,6 @@
-import { User } from './userSchema.js';
+const { User } = require('./userSchema.js');
 
-export async function isNotLoggedIn (req, res, next) {
+async function isNotLoggedIn (req, res, next) {
   if (req.headers.authorization == null) {
     next();
     return;
@@ -18,7 +18,7 @@ export async function isNotLoggedIn (req, res, next) {
   }
 }
 
-export async function isLoggedIn (req, res, next) {
+async function isLoggedIn (req, res, next) {
   if (req.headers.authorization == null) {
     next();
     return;
@@ -35,7 +35,7 @@ export async function isLoggedIn (req, res, next) {
   }
 }
 
-export async function identifyIfLoggedIn (req, _, next) {
+async function identifyIfLoggedIn (req, _, next) {
   if (req.headers.authorization == null) {
     next();
     return;
@@ -49,3 +49,5 @@ export async function identifyIfLoggedIn (req, _, next) {
   }
   next();
 }
+
+module.exports = { isNotLoggedIn, isLoggedIn, identifyIfLoggedIn };

@@ -1,6 +1,11 @@
-import dotenv from 'dotenv';
-import axios from 'axios';
-dotenv.config({ path: './.env.testing' });
+const dotenv = require('dotenv');
+const axios = require('axios');
+
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: './.env.prod-testing' });
+} else {
+  dotenv.config({ path: './.env.dev-testing' });
+}
 
 function wait (ms) {
   return new Promise(resolve => setTimeout(resolve, ms));

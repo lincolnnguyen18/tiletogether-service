@@ -5,7 +5,7 @@ const tileSchema = new Schema({
   index: {
     type: Number,
     required: [true, 'Tile index is required'],
-    default: -1 //default to empty tile
+    default: -1,
   },
   tileset: {
     type: mongoose.ObjectId,
@@ -27,14 +27,14 @@ const LayerSchema = new Schema({
     max: 1,
   },
   tiles: {
-    type: [tile],
+    type: [tileSchema],
     required: [true, 'Tiles are required'],
   },
   type: {
     type: String,
     required: [true, 'Layer type is required'],
     enum: ['tileLayer', 'group'],
-    default: 'tileLayer'
+    default: 'tileLayer',
   },
   visible: {
     type: Boolean,

@@ -61,7 +61,7 @@ const FileSchema = new Schema({
   },
   rootLayer: {
     type: [mongoose.ObjectId],
-    ref: 'Layer'
+    ref: 'Layer',
   },
   sharedWith: {
     type: [String],
@@ -76,19 +76,19 @@ const FileSchema = new Schema({
   },
   tilesets: {
     type: [mongoose.ObjectId],
-    ref: 'File'
+    ref: 'File',
   },
   type: {
     type: String,
     required: [true, 'File type is required'],
     enum: ['map', 'tileset'],
-    default: 'map'
+    default: 'map',
   },
   visibility: {
     type: String,
     required: [true, 'File visibility is required'],
     enum: ['public', 'private'],
-    default: 'private'
+    default: 'private',
   },
 });
 

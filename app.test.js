@@ -1,6 +1,6 @@
-const { apiClient, setupApp, teardownApp } = require('./utils/testing-utils.js');
-const app = require('./app.js');
-const mongoose = require('mongoose');
+import { apiClient, setupApp, teardownApp } from './utils/testing-utils.js';
+import { app } from './app.js';
+import mongoose from 'mongoose';
 
 let server;
 

@@ -1,9 +1,9 @@
-import { identifyIfLoggedIn, isNotLoggedIn } from './userMiddleWare.js';
-import express from 'express';
-import { User } from './userSchema.js';
-import _ from 'lodash';
+const { identifyIfLoggedIn, isNotLoggedIn } = require('./userMiddleWare.js');
+const express = require('express');
+const { User } = require('./userSchema.js');
+const _ = require('lodash');
 
-export const UserRouter = express.Router();
+const UserRouter = express.Router();
 
 UserRouter.get('/', identifyIfLoggedIn, getUser);
 UserRouter.post('/', isNotLoggedIn, postUser);
@@ -89,3 +89,5 @@ async function postUser (req, res) {
     email: user.email,
   });
 }
+
+module.exports = UserRouter;

@@ -88,12 +88,10 @@ Finally, create a pull request on GitHub from your feature branch to the `main` 
 * Review your code changes at the bottom of the page
 * If there are any changes you want to make, `git add` the changes then `git commit --amend --no-edit` and `git push -f`; refresh the PR page and you should see your changes
 * Keep the default title
-* Add a description of your changes if necessary
+* Add a description of your changes; if the PR completes an item in the GitHub project board then write `Closes #<issue number of the item>` in the description 
 * Choose one person on the team to review your PR
 * Assign yourself as the assignee
-* Select `tiletogether-service` in the `Projects` section on the right
 * Select `Add APIs to tile-together service` in the `Milestones` section
-* Select your item from the GitHub project board in the `Development` section
 * Click on the green `Create pull request` button
 
 ### Revise PR

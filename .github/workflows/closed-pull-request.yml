@@ -2,9 +2,12 @@ name: Deploy
 on:
   pull_request:
     types: [closed]
+  push:
+    branches:
+      - main
 jobs:
   deploy-nodejs-app-fargate:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       id-token: write

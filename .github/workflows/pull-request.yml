@@ -32,3 +32,9 @@ jobs:
 
       - name: Run linter
         run: npm run lint
+
+      - name: Start server
+        run: npm start &
+
+      - name: Check if server is up
+        run: curl localhost:3001/health | grep "OK"

@@ -1,8 +1,9 @@
-const dotenv = require('dotenv');
-const express = require('express');
-const cors = require('cors');
-const UserRouter = require('./resources/user/userController');
-const FileRouter = require('./resources/file/fileController');
+import dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import { UserRouter } from './resources/user/userController';
+import { FileRouter } from './resources/file/fileController';
+
 dotenv.config({ path: `./.env.${process.env.NODE_ENV}` });
 
 export const app = express();

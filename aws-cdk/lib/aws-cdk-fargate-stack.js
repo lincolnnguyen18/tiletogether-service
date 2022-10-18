@@ -71,7 +71,7 @@ class AwsCdkFargateStack extends Stack {
         taskImageOptions,
         cpu: 256,
         memoryLimitMiB: 512,
-        desiredCount: 2,
+        desiredCount: 1,
         serviceName: 'tiletogether-service',
         taskSubnets: vpc.selectSubnets({
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,

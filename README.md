@@ -47,6 +47,12 @@ You can edit a message located on any commit of your feature branch by running
 * Save and exit
 * An editor will open for each of the commits you want to edit, edit and save for each commit
 
+Lint code by running
+* `npm run lint`
+
+Autofix linting errors by running
+* `npm run lint:fix`
+
 ### Publish PR
 
 Once you are ready to have your code reviewed, run
@@ -123,13 +129,15 @@ Clean up locally by running
 * `git remote prune origin` to remove the remote branch from your local repository
 * `git branch` to make sure your local and remote feature branches have been deleted
 
+## Other notes
+* You can view the progress and results of GitHub testing and deployment actions at https://github.com/team-orange-cse416/tiletogether-service/actions
+* The TileTogether service (API) is deployed at http://awscd-tilet-s122qu3x8i3j-179261927.us-east-1.elb.amazonaws.com/ 
 
 ## Building and running Docker container
 
 To build and run your Dockerfile, run
-* `docker build -t <image-name> .` to build the Docker image
-* `docker run -dp 3000:80 <image-name>` to connect to the server that is running on port 80 in the container from port 3000 on your machine
+* `docker build -t tiletogether-service .` to build the Docker image
+* `docker run -dp 8080:80 --name tiletogether-service-container tiletogether-service` to connect to the server that is running on port 80 in the container from port 3000 on your machine
 
 To remove the Docker container forcefully, run
-* `docker ps` to get the container ID
-* `docker rm -f <container-id>` to remove the container
+* `docker rm -f tiletogether-service-container` to remove the container

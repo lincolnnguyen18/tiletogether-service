@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-const cdk = require('aws-cdk-lib');
+const { App } = require('aws-cdk-lib');
 const { AwsCdkFargateStack } = require('../lib/aws-cdk-fargate-stack');
 
-const app = new cdk.App();
+const app = new App();
+// eslint-disable-next-line no-new
 new AwsCdkFargateStack(app, 'AwsCdkFargateStack', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,

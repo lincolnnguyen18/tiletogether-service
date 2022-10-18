@@ -1,14 +1,13 @@
 const { Stack } = require('aws-cdk-lib');
 const { Vpc, SubnetType } = require('aws-cdk-lib/aws-ec2');
 const { ApplicationLoadBalancer } = require('aws-cdk-lib/aws-elasticloadbalancingv2');
-const { ServicePrincipal, ManagedPolicy, Role } = require('aws-cdk-lib/aws-iam');
-const { ApplicationLoadBalancedFargateService } = require('aws-cdk-lib/aws-ecs-patterns');
-const { ContainerImage } = require('aws-cdk-lib/aws-ecs');
+const { Role, ServicePrincipal, ManagedPolicy } = require('aws-cdk-lib/aws-iam');
 const { Repository } = require('aws-cdk-lib/aws-ecr');
-const { Cluster } = require('aws-cdk-lib/aws-ecs');
+const { ContainerImage, Cluster } = require('aws-cdk-lib/aws-ecs');
+const { ApplicationLoadBalancedFargateService } = require('aws-cdk-lib/aws-ecs-patterns');
 
 class AwsCdkFargateStack extends Stack {
-  constructor(scope, id, props) {
+  constructor (scope, id, props) {
     super(scope, id, props);
 
     const vpc = new Vpc(this, 'tiletogether-service-vpc', {
@@ -24,7 +23,7 @@ class AwsCdkFargateStack extends Stack {
           cidrMask: 24,
           name: 'application',
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,
-        }
+        },
       ],
     });
 
@@ -42,14 +41,15 @@ class AwsCdkFargateStack extends Stack {
     });
 
     const executionRole = new Role(this, 'tiletogether-service-execution-role', {
-    assumedBy: new ServicePrincipal('ecs-tasks.amazonaws.com'),
+      assumedBy: new ServicePrincipal('ecs-tasks.amazonaws.com'),
       managedPolicies: [
         ManagedPolicy.fromAwsManagedPolicyName(
-          'service-role/AmazonECSTaskExecutionRolePolicy'
-        )
+          'service-role/AmazonECSTaskExecutionRolePolicy',
+        ),
       ],
     });
 
+    // eslint-disable-next-line no-new
     new Repository(this, 'tiletogether-service-repo', {
       repositoryName: 'tiletogether-service-repo',
     });
@@ -62,6 +62,7 @@ class AwsCdkFargateStack extends Stack {
       executionRole,
     };
 
+    // eslint-disable-next-line no-new
     new ApplicationLoadBalancedFargateService(
       this,
       'tiletogether-service',
@@ -70,15 +71,15 @@ class AwsCdkFargateStack extends Stack {
         taskImageOptions,
         cpu: 256,
         memoryLimitMiB: 512,
-        desiredCount: 1,
+        desiredCount: 2,
         serviceName: 'tiletogether-service',
         taskSubnets: vpc.selectSubnets({
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,
         }),
         loadBalancer,
-      }
-    )
+      },
+    );
   }
 }
 
-module.exports = { AwsCdkFargateStack }
+module.exports = { AwsCdkFargateStack };

@@ -1,5 +1,4 @@
 const express = require('express');
-const { Schema } = require('mongoose');
 const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
 const { File } = require('./fileSchema.js');
 const { handleError, mapErrors } = require('../../utils/errorUtils');
@@ -90,33 +89,24 @@ async function setFileLike (req, res) {
   res.json({ message: 'Like set successfully' });
 }
 
-// TODO: fix and add tests
 async function addCommentToFile (req, res) {
-  const { id, author, content } = req.body;
+  const { content } = req.body;
 
-  const handleError = function (err) {
-    res.status(400).json({ err });
-  };
+  const file = await File.findById(req.params.id);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
 
-  const Comment = new Schema({
-    authorUsername: { type: String, required: true },
-    content: { type: String, required: true },
-    createdAt: { type: Date, required: true, default: Date.now },
-  });
+  file.comments.push({ authorUsername: req.user.username, content, createdAt: Date.now() });
 
-  const comment = await Comment.create({ author, content }, handleError);
+  const saveRes = await file.save().catch(() => {});
+  if (saveRes == null) {
+    handleError(res, 500);
+    return;
+  }
 
-  File.update(
-    { _id: id },
-    { $push: { comments: comment } },
-    handleError,
-  );
-
-  res.json({
-    message: 'Comment created successfully',
-    id,
-    comment: comment.content,
-  });
+  res.json({ message: 'Comment added successfully' });
 }
 
 module.exports = { FileRouter };

@@ -86,6 +86,34 @@ describe('Connect to MongoDB', () => {
       expect(error.status).toBe(404);
     });
 
+    test('comment on a file', async () => {
+      const file = await File.newTestFile(user.username);
+      const fileInstance = await File.create(file);
+
+      // test status 200
+      const validFileId = fileInstance._id;
+      function test200 () {
+        return apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
+      }
+
+      const res = await test200();
+      expect(res.status).toBe(200);
+
+      const fileInDb = await File.findOne({ name: file.name, authorUsername: user.username });
+      expect(fileInDb.comments).toContainEqual(
+        expect.objectContaining({ authorUsername: user.username, content: 'test comment' }),
+      );
+
+      // test status 404
+      const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+      function test404 () {
+        return apiClient.post(`/api/files/${invalidFileId}/comment`, { content: 'test comment' }, apiClientConfig);
+      }
+
+      const error = await test404().catch(err => err.response);
+      expect(error.status).toBe(404);
+    });
+
     test('get a file to view', async () => {
       const file = await File.newTestFile(user.username);
       const fileInstance = await File.create(file);

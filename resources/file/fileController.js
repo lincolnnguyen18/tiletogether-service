@@ -3,6 +3,7 @@ const { Schema } = require('mongoose');
 const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
 const { File } = require('./fileSchema.js');
 const { handleError, mapErrors } = require('../../utils/errorUtils');
+const _ = require('lodash');
 
 const FileRouter = express.Router();
 
@@ -28,8 +29,15 @@ async function getFiles () {
   throw new Error('Not implemented');
 }
 
-async function getFileToView () {
-  throw new Error('Not implemented');
+async function getFileToView (req, res) {
+  const file = await File.findById(req.params.id);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
+
+  const pickedFile = _.pick(file, ['id', 'authorUsername', 'comments', 'createdAt', 'height', 'imageUrl', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width']);
+  res.json({ file: pickedFile });
 }
 
 async function getFileToEdit () {
@@ -82,6 +90,7 @@ async function setFileLike (req, res) {
   res.json({ message: 'Like set successfully' });
 }
 
+// TODO: fix and add tests
 async function addCommentToFile (req, res) {
   const { id, author, content } = req.body;
 

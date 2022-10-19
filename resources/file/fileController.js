@@ -1,5 +1,5 @@
-const express = require('express');
-// const { File } = require('./fileSchema.js');
+import express from 'express';
+// import { File } from './fileSchema.js';
 
 export const FileRouter = express.Router();
 

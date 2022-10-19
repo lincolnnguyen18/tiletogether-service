@@ -36,20 +36,23 @@ const fileSchema = Schema({
     content: { type: String, required: true },
     createdAt: { type: Date, required: true, default: Date.now },
   })],
+  likes: [new Schema({
+    authorUsername: { type: String, required: true },
+    createdAt: { type: Date, required: true, default: Date.now },
+  })],
   createdAt: { type: Date, default: Date.now, required: true },
-  height: { type: Number, required: true, min: 1 },
+  height: { type: Number, min: 1, required: [true, 'Height is required'] },
   imageUrl: String,
-  likes: { type: Number, default: 0, required: true, min: 0 },
-  name: { type: String, required: true },
+  name: { type: String, required: [true, 'Name is required'] },
   rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
   sharedWith: [String],
   tags: [String],
-  tileDimension: { type: Number, required: true },
+  tileDimension: { type: Number, required: [true, 'Tile dimension is required'] },
   tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
   type: { type: String, required: true, enum: ['map', 'tileset'] },
   updatedAt: { type: Date, default: Date.now, required: true },
   visibility: { type: String, required: true, enum: ['public', 'private'] },
-  width: { type: Number, required: true, min: 1 },
+  width: { type: Number, min: 1, required: [true, 'Width is required'] },
 });
 
 fileSchema.statics.newTestFile = async function (authorUsername) {
@@ -78,4 +81,4 @@ fileSchema.statics.deleteTestFiles = async function () {
 const Layer = mongoose.model('Layer', layerSchema);
 const File = mongoose.model('File', fileSchema);
 
-module.exports = { fileSchema, File };
+module.exports = { File };

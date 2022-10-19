@@ -1,6 +1,8 @@
 const express = require('express');
+const { Schema } = require('mongoose');
 const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
 const { File } = require('./fileSchema.js');
+const { handleError, mapErrors } = require('../../utils/errorUtils');
 
 const FileRouter = express.Router();
 
@@ -36,9 +38,15 @@ async function getFileToEdit () {
 
 async function postFile (req, res) {
   const file = req.body;
+
   file.authorUsername = req.user.username;
   const fileInstance = new File(file);
-  File.create(fileInstance);
+  const createRes = await File.create(fileInstance).catch(err => err);
+
+  if (createRes.errors != null) {
+    handleError(res, 400, mapErrors(createRes.errors));
+    return;
+  }
   res.json({ message: 'File created', file: fileInstance });
 }
 
@@ -50,12 +58,56 @@ async function deleteFile () {
   throw new Error('Not implemented');
 }
 
-async function setFileLike () {
-  throw new Error('Not implemented');
+async function setFileLike (req, res) {
+  const { liked } = req.body;
+
+  const file = await File.findById(req.params.id);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
+
+  if (liked) {
+    file.likes.push({ authorUsername: req.user.username, createdAt: Date.now() });
+  } else {
+    file.likes = file.likes.filter(like => like.authorUsername !== req.user.username);
+  }
+
+  const saveRes = await file.save().catch(() => {});
+  if (saveRes == null) {
+    handleError(res, 500);
+    return;
+  }
+
+  res.json({ message: 'Like set successfully' });
 }
 
-async function addCommentToFile () {
-  throw new Error('Not implemented');
+async function addCommentToFile (req, res) {
+  const { id, author, content } = req.body;
+
+  const handleError = function (err) {
+    res.status(400).json({ err });
+  };
+
+  const Comment = new Schema({
+    authorUsername: { type: String, required: true },
+    content: { type: String, required: true },
+    createdAt: { type: Date, required: true, default: Date.now },
+  });
+
+  const comment = await Comment.create({ author, content }, handleError);
+
+  File.update(
+    { _id: id },
+    { $push: { comments: comment } },
+    handleError,
+  );
+
+  res.json({
+    message: 'Comment created successfully',
+    id,
+    comment: comment.content,
+  });
 }
 
 module.exports = { FileRouter };

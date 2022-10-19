@@ -1,7 +1,7 @@
 const { identifyIfLoggedIn, isNotLoggedIn } = require('./userMiddleWare.js');
 const express = require('express');
 const { User } = require('./userSchema.js');
-const _ = require('lodash');
+const { mapErrors, handleError } = require('../../utils/errorUtils');
 
 const UserRouter = express.Router();
 
@@ -11,46 +11,41 @@ UserRouter.delete('/', deleteUser);
 
 async function getUser (req, res) {
   const { email, password } = req.query;
-  if (email != null && password != null) {
-    try {
-      const userObject = await User.authenticate(email, password);
-      if (userObject) {
-        req.user = userObject.user;
-        res.json({
-          message: 'Login successful',
-          token: userObject.generateAuthToken(),
-          username: userObject.username,
-          email: userObject.email,
-        });
-      } else {
-        res.status(401).json({ error: 'Invalid credentials' });
-      }
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  } else {
+
+  if (email == null || password == null) {
     if (req.user != null) {
       res.json({ username: req.user.username, email: req.user.email });
     } else {
-      res.status(401).json({ error: 'Invalid token' });
+      handleError(res, 401);
     }
+    return;
   }
+
+  const userInstance = await User.authenticate(email, password);
+  if (userInstance == null) {
+    handleError(res, 401);
+    return;
+  }
+
+  req.user = userInstance.user;
+  res.json({
+    message: 'Login successful',
+    token: userInstance.generateAuthToken(),
+    username: userInstance.username,
+    email: userInstance.email,
+  });
 }
 
-function deleteUser (req, res) {
+async function deleteUser (req, res) {
   const { email, password } = req.query;
-  User.authenticate(email, password)
-    .then(user => {
-      if (user) {
-        user.remove();
-        res.json({ message: 'Deregistration successful' });
-      } else {
-        res.status(401).json({ error: 'User not found' });
-      }
-    })
-    .catch(err => {
-      res.status(500).json({ error: err.message });
-    });
+
+  const user = await User.authenticate(email, password);
+  if (user == null) {
+    handleError(res, 401);
+    return;
+  }
+  user.remove();
+  res.json({ message: 'Deregisration successful' });
 }
 
 async function postUser (req, res) {
@@ -71,13 +66,17 @@ async function postUser (req, res) {
     errors.email = 'Email already in use';
   }
 
-  const user = await User.create({ username, password, email })
-    .catch(err => {
-      errors = _.merge(errors, _.mapValues(err.errors, e => e.message));
-    });
+  if (Object.keys(errors).length > 0) {
+    handleError(res, 400, errors);
+    return;
+  }
+
+  const user = new User({ username, password, email });
+  const createRes = await User.create(user).catch(err => err);
+  errors = mapErrors(createRes.errors, errors);
 
   if (Object.keys(errors).length > 0) {
-    res.status(400).json({ errors });
+    handleError(res, 400, mapErrors(createRes.errors, errors));
     return;
   }
 

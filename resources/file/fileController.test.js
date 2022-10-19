@@ -27,16 +27,17 @@ describe('Connect to MongoDB', () => {
       // setup
       const user = User.newTestUser();
       const userInstance = await User.create(user);
+      const apiClientConfig = {
+        headers: {
+          withCredentials: true,
+          Authorization: `Bearer ${userInstance.generateAuthToken()}`,
+        },
+      };
 
       // test status 200
       const validFile = await File.newTestFile(user.username);
       function test200 () {
-        return apiClient.post('/api/files', validFile, {
-          headers: {
-            withCredentials: true,
-            Authorization: `Bearer ${userInstance.generateAuthToken()}`,
-          },
-        });
+        return apiClient.post('/api/files', validFile, apiClientConfig);
       }
       const res = await test200();
       expect(res.status).toBe(200);
@@ -48,12 +49,7 @@ describe('Connect to MongoDB', () => {
       const invalidFile = await File.newTestFile(user.username);
       invalidFile.name = '';
       function test400 () {
-        return apiClient.post('/api/files', invalidFile, {
-          headers: {
-            withCredentials: true,
-            Authorization: `Bearer ${userInstance.generateAuthToken()}`,
-          },
-        });
+        return apiClient.post('/api/files', invalidFile, apiClientConfig);
       }
       const res400 = await test400().catch(err => err.response);
       expect(res400.status).toBe(400);
@@ -68,6 +64,12 @@ describe('Connect to MongoDB', () => {
       // setup
       const user = User.newTestUser();
       const userInstance = await User.create(user);
+      const apiClientConfig = {
+        headers: {
+          withCredentials: true,
+          Authorization: `Bearer ${userInstance.generateAuthToken()}`,
+        },
+      };
 
       const file = await File.newTestFile(user.username);
       const fileInstance = await File.create(file);
@@ -75,12 +77,7 @@ describe('Connect to MongoDB', () => {
       // test status 200
       const validFileId = fileInstance._id;
       function test200 () {
-        return apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, {
-          headers: {
-            withCredentials: true,
-            Authorization: `Bearer ${userInstance.generateAuthToken()}`,
-          },
-        });
+        return apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig);
       }
 
       const res = await test200();
@@ -94,12 +91,7 @@ describe('Connect to MongoDB', () => {
       // test status 404
       const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
       function test404 () {
-        return apiClient.post(`/api/files/${invalidFileId}/like`, { liked: true }, {
-          headers: {
-            withCredentials: true,
-            Authorization: `Bearer ${userInstance.generateAuthToken()}`,
-          },
-        });
+        return apiClient.post(`/api/files/${invalidFileId}/like`, { liked: true }, apiClientConfig);
       }
 
       const error = await test404().catch(err => err.response);

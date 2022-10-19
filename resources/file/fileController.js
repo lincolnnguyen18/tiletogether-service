@@ -82,6 +82,7 @@ async function setFileLike (req, res) {
   res.json({ message: 'Like set successfully' });
 }
 
+// TODO: fix and add tests
 async function addCommentToFile (req, res) {
   const { id, author, content } = req.body;
 

@@ -20,6 +20,21 @@ const CommentSchema = new Schema({
   },
 });
 
+const LikeSchema = new Schema({
+  authorUsername: {
+    type: String,
+    required: [true, 'Author\'s username is required'],
+    match: [/^[a-z0-9_]+$/, 'Username can only contain lowercase alphanumeric characters and underscores'],
+    minLength: [3, 'Username must be at least 3 characters long'],
+    maxLength: [20, 'Username can be at most 20 characters long'],
+    set: v => v.toLowerCase(),
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const FileSchema = new Schema({
   authorUsername: {
     type: String,
@@ -37,8 +52,7 @@ const FileSchema = new Schema({
     type: [CommentSchema],
   },
   likes: {
-    type: Number,
-    minimum: 0,
+    type: [LikeSchema],
   },
   createdAt: {
     type: Date,
@@ -96,5 +110,6 @@ const FileSchema = new Schema({
 
 const File = mongoose.model('File', FileSchema);
 const Comment = mongoose.model('Comment', CommentSchema);
+const Like = mongoose.model('Like', LikeSchema);
 
-module.exports = { FileSchema, File, Comment, CommentSchema };
+module.exports = { FileSchema, File, Comment, CommentSchema, Like, LikeSchema };

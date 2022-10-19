@@ -36,6 +36,10 @@ const FileSchema = new Schema({
   comments: {
     type: [CommentSchema],
   },
+  likes: {
+    type: Number,
+    minimum: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -49,7 +53,7 @@ const FileSchema = new Schema({
     required: [true, 'Height is required'],
     minimum: 1,
   },
-  witdth: {
+  width: {
     type: Number,
     required: [true, 'Width is required'],
     minimum: 1,
@@ -91,5 +95,6 @@ const FileSchema = new Schema({
 });
 
 const File = mongoose.model('File', FileSchema);
+const Comment = mongoose.model('Comment', CommentSchema);
 
-module.exports = { FileSchema, File };
+module.exports = { FileSchema, File, Comment, CommentSchema };

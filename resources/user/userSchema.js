@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const jwt = require('jsonwebtoken');
+const { faker } = require('@faker-js/faker');
 
 function hashPassword (password) {
   if (password && password.length >= 8) {
@@ -63,6 +64,28 @@ UserSchema.methods.generateAuthToken = function () {
     expiresIn: '1d',
   };
   return jwt.sign(payload, secret, options);
+};
+
+UserSchema.statics.newTestUser = function () {
+  // truncate username length to <= 20 - len(_test_user)
+  const suffix = '_test_user';
+  let username = faker.random.word(1).toLowerCase();
+  username = username.slice(0, 20 - suffix.length);
+  username += suffix;
+
+  if (username.length > 20) {
+    throw new Error(`Username ${username} is too long`);
+  }
+
+  return {
+    username,
+    password: faker.internet.password(),
+    email: faker.internet.email(),
+  };
+};
+
+UserSchema.statics.deleteTestUsers = async function () {
+  return this.deleteMany({ username: { $regex: '_test_user' } });
 };
 
 const User = mongoose.model('User', UserSchema);

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 const { App } = require('aws-cdk-lib');
-const { AwsCdkFargateStack } = require('../lib/aws-cdk-fargate-stack');
+const { TileTogetherServiceStack } = require('../lib/aws-cdk-fargate-stack');
 
 const app = new App();
 // eslint-disable-next-line no-new
-new AwsCdkFargateStack(app, 'AwsCdkFargateStack', {
+new TileTogetherServiceStack(app, 'tiletogether-service-stack', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */

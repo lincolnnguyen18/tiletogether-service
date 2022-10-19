@@ -6,7 +6,7 @@ const { Repository } = require('aws-cdk-lib/aws-ecr');
 const { ContainerImage, Cluster } = require('aws-cdk-lib/aws-ecs');
 const { ApplicationLoadBalancedFargateService } = require('aws-cdk-lib/aws-ecs-patterns');
 
-class AwsCdkFargateStack extends Stack {
+class TileTogetherServiceStack extends Stack {
   constructor (scope, id, props) {
     super(scope, id, props);
 
@@ -49,8 +49,8 @@ class AwsCdkFargateStack extends Stack {
       ],
     });
 
-    // eslint-disable-next-line no-new
-    new Repository(this, 'tiletogether-service-repo', {
+    // eslint-disable-next-line no-unused-vars
+    const repository = new Repository(this, 'tiletogether-service-repo', {
       repositoryName: 'tiletogether-service-repo',
     });
 
@@ -62,8 +62,8 @@ class AwsCdkFargateStack extends Stack {
       executionRole,
     };
 
-    // eslint-disable-next-line no-new
-    new ApplicationLoadBalancedFargateService(
+    // eslint-disable-next-line no-unused-vars
+    const fargateService = new ApplicationLoadBalancedFargateService(
       this,
       'tiletogether-service',
       {
@@ -71,7 +71,7 @@ class AwsCdkFargateStack extends Stack {
         taskImageOptions,
         cpu: 256,
         memoryLimitMiB: 512,
-        desiredCount: 1,
+        desiredCount: 3,
         serviceName: 'tiletogether-service',
         taskSubnets: vpc.selectSubnets({
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,
@@ -82,4 +82,4 @@ class AwsCdkFargateStack extends Stack {
   }
 }
 
-module.exports = { AwsCdkFargateStack };
+module.exports = { TileTogetherServiceStack };

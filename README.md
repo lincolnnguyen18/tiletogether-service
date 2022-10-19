@@ -7,8 +7,8 @@
 4. Run `npm install` in the root directory
 5. Make sure MongoDB is running on port 27017
 6. Run `npm run start` in the root directory
-7. Go to `localhost:3001/health` to see if the server is running
-8. Run `npm run test` to run the tests
+7. Go to `localhost:3001/health` and you should see `OK`
+8. Run `npm run test` to run tests
 
 ## Reviewing a PR
 

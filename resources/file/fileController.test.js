@@ -10,10 +10,21 @@ let server;
 jest.setTimeout(100000);
 
 describe('Connect to MongoDB', () => {
+  let user, userInstance, apiClientConfig;
+
   beforeAll(async () => {
     server = await setupApp(app, mongoose);
     await File.deleteTestFiles();
     await User.deleteTestUsers();
+
+    user = User.newTestUser();
+    userInstance = await User.create(user);
+    apiClientConfig = {
+      headers: {
+        withCredentials: true,
+        Authorization: `Bearer ${userInstance.generateAuthToken()}`,
+      },
+    };
   });
 
   afterAll(async () => {
@@ -24,16 +35,6 @@ describe('Connect to MongoDB', () => {
 
   describe('File API lets user', () => {
     test('upload file', async () => {
-      // setup
-      const user = User.newTestUser();
-      const userInstance = await User.create(user);
-      const apiClientConfig = {
-        headers: {
-          withCredentials: true,
-          Authorization: `Bearer ${userInstance.generateAuthToken()}`,
-        },
-      };
-
       // test status 200
       const validFile = await File.newTestFile(user.username);
       function test200 () {
@@ -54,23 +55,9 @@ describe('Connect to MongoDB', () => {
       const res400 = await test400().catch(err => err.response);
       expect(res400.status).toBe(400);
       expect(res400.data.error.name).toBe('Name is required');
-
-      // teardown
-      await User.deleteOne({ _id: userInstance._id });
-      await File.deleteOne({ _id: validFile._id });
     });
 
     test('like a file', async () => {
-      // setup
-      const user = User.newTestUser();
-      const userInstance = await User.create(user);
-      const apiClientConfig = {
-        headers: {
-          withCredentials: true,
-          Authorization: `Bearer ${userInstance.generateAuthToken()}`,
-        },
-      };
-
       const file = await File.newTestFile(user.username);
       const fileInstance = await File.create(file);
 
@@ -96,10 +83,6 @@ describe('Connect to MongoDB', () => {
 
       const error = await test404().catch(err => err.response);
       expect(error.status).toBe(404);
-
-      // teardown
-      await User.deleteOne({ _id: userInstance._id });
-      await File.deleteOne({ _id: file._id });
     });
   });
 });

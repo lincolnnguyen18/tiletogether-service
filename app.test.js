@@ -1,4 +1,4 @@
-const { apiClient, setupApp, teardownApp } = require('./utils/testing-utils.js');
+const { apiClient, setupApp, teardownApp } = require('./utils/testingUtils.js');
 const { app } = require('./app.js');
 const mongoose = require('mongoose');
 

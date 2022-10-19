@@ -1,7 +1,7 @@
 const { identifyIfLoggedIn, isNotLoggedIn } = require('./userMiddleWare.js');
 const express = require('express');
 const { User } = require('./userSchema.js');
-const _ = require('lodash');
+const { mapErrors } = require('../../utils/errorUtils');
 
 const UserRouter = express.Router();
 
@@ -43,7 +43,7 @@ function deleteUser (req, res) {
     .then(user => {
       if (user) {
         user.remove();
-        res.json({ message: 'Deregistration successful' });
+        res.json({ message: 'Deregisration successful' });
       } else {
         res.status(401).json({ error: 'User not found' });
       }
@@ -73,7 +73,7 @@ async function postUser (req, res) {
 
   const user = await User.create({ username, password, email })
     .catch(err => {
-      errors = _.merge(errors, _.mapValues(err.errors, e => e.message));
+      errors = mapErrors(err.errors, errors);
     });
 
   if (Object.keys(errors).length > 0) {

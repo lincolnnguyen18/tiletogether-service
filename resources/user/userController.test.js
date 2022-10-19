@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { User } = require('./userSchema.js');
 const _ = require('lodash');
-const { apiClient, setupApp, teardownApp } = require('../../utils/testing-utils.js');
+const { apiClient, setupApp, teardownApp } = require('../../utils/testingUtils.js');
 const { app } = require('../../app.js');
 
 let user;

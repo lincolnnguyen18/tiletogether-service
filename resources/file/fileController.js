@@ -2,6 +2,7 @@ const express = require('express');
 const { Schema } = require('mongoose');
 const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
 const { File } = require('./fileSchema.js');
+const { handleError, mapErrors } = require('../../utils/errorUtils');
 
 const FileRouter = express.Router();
 
@@ -37,9 +38,15 @@ async function getFileToEdit () {
 
 async function postFile (req, res) {
   const file = req.body;
+
   file.authorUsername = req.user.username;
   const fileInstance = new File(file);
-  File.create(fileInstance);
+  const createRes = await File.create(fileInstance).catch(err => err);
+
+  if (createRes.errors != null) {
+    handleError(res, 400, mapErrors(createRes.errors));
+    return;
+  }
   res.json({ message: 'File created', file: fileInstance });
 }
 
@@ -52,29 +59,27 @@ async function deleteFile () {
 }
 
 async function setFileLike (req, res) {
-  const { id, likedByUser } = req.body;
+  const { liked } = req.body;
 
-  const handleError = function (err) {
-    res.status(400).json({ err });
-  };
-  const Like = new Schema({
-    index: { type: Number, required: true },
-    tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
-  });
+  const file = await File.findById(req.params.id);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
 
-  const like = await Like.create({ likedByUser }, handleError);
+  if (liked) {
+    file.likes.push({ authorUsername: req.user.username, createdAt: Date.now() });
+  } else {
+    file.likes = file.likes.filter(like => like.authorUsername !== req.user.username);
+  }
 
-  File.update(
-    { _id: id },
-    { $push: { likes: like } },
-    handleError,
-  );
+  const saveRes = await file.save().catch(() => {});
+  if (saveRes == null) {
+    handleError(res, 500);
+    return;
+  }
 
-  res.json({
-    message: 'Like created successfully',
-    id,
-    likedByUser: like.authorUsername,
-  });
+  res.json({ message: 'Like set successfully' });
 }
 
 async function addCommentToFile (req, res) {

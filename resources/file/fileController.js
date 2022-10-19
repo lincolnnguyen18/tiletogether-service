@@ -1,4 +1,5 @@
 const express = require('express');
+const { Schema } = require('mongoose');
 const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
 const { File } = require('./fileSchema.js');
 
@@ -50,12 +51,58 @@ async function deleteFile () {
   throw new Error('Not implemented');
 }
 
-async function setFileLike () {
-  throw new Error('Not implemented');
+async function setFileLike (req, res) {
+  const { id, likedByUser } = req.body;
+
+  const handleError = function (err) {
+    res.status(400).json({ err });
+  };
+  const Like = new Schema({
+    index: { type: Number, required: true },
+    tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
+  });
+
+  const like = await Like.create({ likedByUser }, handleError);
+
+  File.update(
+    { _id: id },
+    { $push: { likes: like } },
+    handleError,
+  );
+
+  res.json({
+    message: 'Like created successfully',
+    id,
+    likedByUser: like.authorUsername,
+  });
 }
 
-async function addCommentToFile () {
-  throw new Error('Not implemented');
+async function addCommentToFile (req, res) {
+  const { id, author, content } = req.body;
+
+  const handleError = function (err) {
+    res.status(400).json({ err });
+  };
+
+  const Comment = new Schema({
+    authorUsername: { type: String, required: true },
+    content: { type: String, required: true },
+    createdAt: { type: Date, required: true, default: Date.now },
+  });
+
+  const comment = await Comment.create({ author, content }, handleError);
+
+  File.update(
+    { _id: id },
+    { $push: { comments: comment } },
+    handleError,
+  );
+
+  res.json({
+    message: 'Comment created successfully',
+    id,
+    comment: comment.content,
+  });
 }
 
 module.exports = { FileRouter };

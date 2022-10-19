@@ -3,7 +3,7 @@ import mongoose, { Schema } from 'mongoose';
 const CommentSchema = new Schema({
   authorUsername: {
     type: String,
-    required: [true, 'Authoer\'s username is required'],
+    required: [true, 'Author\'s username is required'],
     match: [/^[a-z0-9_]+$/, 'Username can only contain lowercase alphanumeric characters and underscores'],
     minLength: [3, 'Username must be at least 3 characters long'],
     maxLength: [20, 'Username can be at most 20 characters long'],
@@ -23,7 +23,7 @@ const CommentSchema = new Schema({
 const FileSchema = new Schema({
   authorUsername: {
     type: String,
-    required: [true, 'Authoer\'s username is required'],
+    required: [true, 'Author\'s username is required'],
     match: [/^[a-z0-9_]+$/, 'Username can only contain lowercase alphanumeric characters and underscores'],
     minLength: [3, 'Username must be at least 3 characters long'],
     maxLength: [20, 'Username can be at most 20 characters long'],
@@ -35,7 +35,6 @@ const FileSchema = new Schema({
   },
   comments: {
     type: [CommentSchema],
-    default: [],
   },
   createdAt: {
     type: Date,

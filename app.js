@@ -7,9 +7,8 @@ import { FileRouter } from './resources/file/fileController.js';
 dotenv.config({ path: `./.env.${process.env.NODE_ENV}` });
 
 export const app = express();
-if (process.env.NODE_ENV === 'development') {
-  app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
-}
+
+app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -37,4 +37,4 @@ jobs:
         run: npm start &
 
       - name: Check if server is up
-        run: curl localhost:3001/health | grep "OK"
+        run: curl localhost:3001/api/health | grep "OK"

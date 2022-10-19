@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-import axios from 'axios';
+const dotenv = require('dotenv');
+const axios = require('axios');
 dotenv.config({ path: './.env.testing' });
 
 function wait (ms) {

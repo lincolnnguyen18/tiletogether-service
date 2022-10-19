@@ -1,7 +1,7 @@
-import express from 'express';
-// import { File } from './fileSchema.js';
+const express = require('express');
+// const { File } = require('./fileSchema.js');
 
-export const FileRouter = express.Router();
+const FileRouter = express.Router();
 
 /* FileRouter.post('/', getCommunityFiles);
 FileRouter.get('/search/', search);
@@ -18,3 +18,5 @@ async function search (req, res) {
 async function getUserFiles (req, res) {
 
 } */
+
+module.exports = { FileRouter };

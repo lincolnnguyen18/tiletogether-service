@@ -142,7 +142,7 @@ Clean up locally by running
 
 ## Other notes
 * You can view the progress and results of GitHub testing and deployment actions at https://github.com/team-orange-cse416/tiletogether-service/actions
-* The TileTogether service (API) is deployed at http://awscd-tilet-s122qu3x8i3j-179261927.us-east-1.elb.amazonaws.com/ 
+* The TileTogether service (API) is deployed at http://tilet-tilet-106nxor4bs8xf-1865832886.us-east-1.elb.amazonaws.com/ 
 
 ## Building and running Docker container
 

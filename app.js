@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
-import { UserRouter } from './resources/user/userController';
-import { FileRouter } from './resources/file/fileController';
+import { UserRouter } from './resources/user/userController.js';
+import { FileRouter } from './resources/file/fileController.js';
 
 dotenv.config({ path: `./.env.${process.env.NODE_ENV}` });
 

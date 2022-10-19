@@ -63,15 +63,13 @@ class TileTogetherServiceStack extends Stack {
     };
 
     // eslint-disable-next-line no-unused-vars
-    const fargateService = new ApplicationLoadBalancedFargateService(
-      this,
-      'tiletogether-service',
+    const fargateService = new ApplicationLoadBalancedFargateService(this, 'tiletogether-service',
       {
         cluster,
         taskImageOptions,
         cpu: 256,
         memoryLimitMiB: 512,
-        desiredCount: 3,
+        desiredCount: 1,
         serviceName: 'tiletogether-service',
         taskSubnets: vpc.selectSubnets({
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,
@@ -79,6 +77,12 @@ class TileTogetherServiceStack extends Stack {
         loadBalancer,
       },
     );
+
+    fargateService.targetGroup.configureHealthCheck({
+      path: '/api/health',
+      enabled: true,
+      healthyHttpCodes: '200',
+    });
   }
 }
 

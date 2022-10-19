@@ -1,8 +1,8 @@
-import mongoose from 'mongoose';
-import { User } from './userSchema.js';
-import _ from 'lodash';
-import { apiClient, setupApp, teardownApp } from '../../utils/testing-utils.js';
-import { app } from '../../app.js';
+const mongoose = require('mongoose');
+const { User } = require('./userSchema.js');
+const _ = require('lodash');
+const { apiClient, setupApp, teardownApp } = require('../../utils/testing-utils.js');
+const { app } = require('../../app.js');
 
 let user;
 let server;

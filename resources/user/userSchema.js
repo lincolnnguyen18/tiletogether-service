@@ -1,6 +1,7 @@
-import bcrypt from 'bcrypt';
-import mongoose, { Schema } from 'mongoose';
-import jwt from 'jsonwebtoken';
+const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+const jwt = require('jsonwebtoken');
 
 function hashPassword (password) {
   if (password && password.length >= 8) {
@@ -10,7 +11,7 @@ function hashPassword (password) {
   return password;
 }
 
-export const UserSchema = new Schema({
+const UserSchema = new Schema({
   username: {
     type: String,
     required: [true, 'Username is required'],
@@ -64,4 +65,6 @@ UserSchema.methods.generateAuthToken = function () {
   return jwt.sign(payload, secret, options);
 };
 
-export const User = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', UserSchema);
+
+module.exports = { UserSchema, User };

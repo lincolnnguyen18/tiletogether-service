@@ -1,6 +1,6 @@
-import { apiClient, setupApp, teardownApp } from './utils/testing-utils.js';
-import { app } from './app.js';
-import mongoose from 'mongoose';
+const { apiClient, setupApp, teardownApp } = require('./utils/testing-utils.js');
+const { app } = require('./app.js');
+const mongoose = require('mongoose');
 
 let server;
 
@@ -13,8 +13,8 @@ describe('App', () => {
     await teardownApp(server, mongoose);
   });
 
-  test('returns 200 on /health', async () => {
-    const response = await apiClient.get('/health');
+  test('returns 200 on /api/health', async () => {
+    const response = await apiClient.get('/api/health');
     expect(response.status).toBe(200);
   });
 });

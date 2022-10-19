@@ -57,7 +57,7 @@ describe('Connect to MongoDB', () => {
       }
       const res400 = await test400().catch(err => err.response);
       expect(res400.status).toBe(400);
-      expect(Object.keys(res400.data.error)).toContain('name');
+      expect(res400.data.error.name).toBe('Name is required');
 
       // teardown
       await User.deleteOne({ _id: userInstance._id });

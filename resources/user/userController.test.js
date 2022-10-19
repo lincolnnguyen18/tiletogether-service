@@ -85,7 +85,6 @@ describe('Connect to MongoDB', () => {
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(401);
-        expect(err.response.data.error).toBe('User not found');
       }
     });
 
@@ -101,7 +100,6 @@ describe('Connect to MongoDB', () => {
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(401);
-        expect(err.response.data.error).toBe('Invalid credentials');
       }
     });
 
@@ -116,7 +114,6 @@ describe('Connect to MongoDB', () => {
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(401);
-        expect(err.response.data.error).toBe('Invalid token');
       }
     });
 
@@ -142,7 +139,7 @@ describe('Connect to MongoDB', () => {
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
-        expect(err.response.data.errors.confirmPassword).toBe('Passwords do not match');
+        expect(err.response.data.error.confirmPassword).toBe('Passwords do not match');
       }
     });
 
@@ -153,7 +150,7 @@ describe('Connect to MongoDB', () => {
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
-        expect(err.response.data.errors.email).toBe('Invalid email');
+        expect(err.response.data.error.email).toBe('Invalid email');
       }
     });
 
@@ -164,7 +161,7 @@ describe('Connect to MongoDB', () => {
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
-        expect(err.response.data.errors).toEqual({
+        expect(err.response.data.error).toEqual({
           username: 'Username already exists',
           email: 'Email already in use',
         });
@@ -178,7 +175,7 @@ describe('Connect to MongoDB', () => {
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
-        expect(err.response.data.errors.username).toBe('Username can only contain lowercase alphanumeric characters and underscores');
+        expect(err.response.data.error.username).toBe('Username can only contain lowercase alphanumeric characters and underscores');
       }
     });
 
@@ -189,7 +186,7 @@ describe('Connect to MongoDB', () => {
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
-        expect(err.response.data.errors.username).toBe('Username must be at least 3 characters long');
+        expect(err.response.data.error.username).toBe('Username must be at least 3 characters long');
       }
     });
   });

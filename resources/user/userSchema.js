@@ -34,15 +34,12 @@ const UserSchema = new Schema({
   },
 });
 
-UserSchema.statics.authenticate = function (email, password) {
-  return this.findOne({ email })
-    .then(user => {
-      if (user && bcrypt.compareSync(password, user.password)) {
-        return user;
-      } else {
-        return null;
-      }
-    });
+UserSchema.statics.authenticate = async function (email, password) {
+  const user = await this.findOne({ email }).catch(() => null);
+  if (user && bcrypt.compareSync(password, user.password)) {
+    return user;
+  }
+  return null;
 };
 
 UserSchema.statics.findByToken = function (token) {

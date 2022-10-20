@@ -38,6 +38,7 @@ class TileTogetherServiceStack extends Stack {
     const cluster = new Cluster(this, 'tiletogether-service-cluster', {
       vpc,
       clusterName: 'tiletogether-service-cluster',
+      enableFargateCapacityProviders: true,
     });
 
     const executionRole = new Role(this, 'tiletogether-service-execution-role', {
@@ -63,20 +64,24 @@ class TileTogetherServiceStack extends Stack {
     };
 
     // eslint-disable-next-line no-unused-vars
-    const fargateService = new ApplicationLoadBalancedFargateService(this, 'tiletogether-service',
-      {
-        cluster,
-        taskImageOptions,
-        cpu: 256,
-        memoryLimitMiB: 512,
-        desiredCount: 1,
-        serviceName: 'tiletogether-service',
-        taskSubnets: vpc.selectSubnets({
-          subnetType: SubnetType.PRIVATE_WITH_EGRESS,
-        }),
-        loadBalancer,
-      },
-    );
+    const fargateService = new ApplicationLoadBalancedFargateService(this, 'tiletogether-service', {
+      cluster,
+      taskImageOptions,
+      cpu: 256,
+      memoryLimitMiB: 512,
+      desiredCount: 1,
+      serviceName: 'tiletogether-service',
+      taskSubnets: vpc.selectSubnets({
+        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+      }),
+      loadBalancer,
+      capacityProviderStrategies: [
+        {
+          capacityProvider: 'FARGATE_SPOT',
+          weight: 1,
+        },
+      ],
+    });
 
     fargateService.targetGroup.configureHealthCheck({
       path: '/api/health',

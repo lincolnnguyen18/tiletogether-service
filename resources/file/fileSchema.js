@@ -30,14 +30,14 @@ layerSchema.methods.newRandomLayer = function () {
 };
 
 const fileSchema = Schema({
-  authorUsername: { type: String, required: true },
+  authorUsername: { type: String, required: true, index: true },
   comments: [new Schema({
-    authorUsername: { type: String, required: true },
+    authorUsername: { type: String, required: true, index: true },
     content: { type: String, required: true },
     createdAt: { type: Date, required: true, default: Date.now },
   })],
   likes: [new Schema({
-    authorUsername: { type: String, required: true },
+    authorUsername: { type: String, required: true, index: true },
     createdAt: { type: Date, required: true, default: Date.now },
   })],
   createdAt: { type: Date, default: Date.now, required: true },
@@ -47,11 +47,11 @@ const fileSchema = Schema({
   rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
   sharedWith: [String],
   tags: [String],
-  tileDimension: { type: Number, required: [true, 'Tile dimension is required'] },
+  tileDimension: { type: Number, required: [true, 'Tile dimension is required'], index: true },
   tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
-  type: { type: String, required: true, enum: ['map', 'tileset'] },
+  type: { type: String, required: true, enum: ['map', 'tileset'], index: true },
   updatedAt: { type: Date, default: Date.now, required: true },
-  visibility: { type: String, required: true, enum: ['public', 'private'] },
+  visibility: { type: String, required: true, enum: ['public', 'private'], index: true },
   width: { type: Number, min: 1, required: [true, 'Width is required'] },
 });
 

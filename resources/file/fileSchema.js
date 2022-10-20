@@ -4,7 +4,7 @@ const _ = require('lodash');
 const mongoose = require('mongoose');
 
 const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals', 'plants', 'food', 'weapons', 'misc'];
-const tileSizes = [16, 32, 64, 128, 256];
+const tileDimensions = [16, 32, 64, 128, 256];
 
 const layerSchema = Schema({
   name: { type: String, required: true },
@@ -58,19 +58,20 @@ const fileSchema = Schema({
 fileSchema.statics.newTestFile = async function (authorUsername) {
   const createdAt = faker.date.past();
   const updatedAt = faker.date.between(createdAt, new Date());
+  const tileDimension = _.sample(tileDimensions);
 
   return {
     name: faker.random.words(_.random(1, 5)) + '_test_file',
     authorUsername,
-    tileDimension: _.sample(tileSizes),
+    tileDimension,
     tags: _.sampleSize(tags, _.random(1, 4)),
     createdAt,
     updatedAt,
     rootLayer: (await Layer.create({ name: faker.random.words(_.random(1, 5)), type: 'group' }))._id,
     type: _.sample(['map', 'tileset']),
     visibility: _.sample(['public', 'private']),
-    width: _.random(1, 100),
-    height: _.random(1, 100),
+    width: _.random(1, 50) * tileDimension,
+    height: _.random(1, 50) * tileDimension,
   };
 };
 

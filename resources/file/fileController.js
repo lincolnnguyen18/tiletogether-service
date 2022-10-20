@@ -74,9 +74,16 @@ async function setFileLike (req, res) {
     return;
   }
 
+  const currentlyLiked = file.likes.find(l => l.authorUsername === req.user.username) != null;
+
+  if (liked === currentlyLiked) {
+    handleError(res, 400, { liked: `File is already ${liked ? 'liked' : 'unliked'}` });
+    return;
+  }
+
   if (liked) {
     file.likes.push({ authorUsername: req.user.username, createdAt: Date.now() });
-  } else {
+  } else if (!liked) {
     file.likes = file.likes.filter(like => like.authorUsername !== req.user.username);
   }
 

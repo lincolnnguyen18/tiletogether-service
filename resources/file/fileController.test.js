@@ -44,7 +44,7 @@ describe('Connect to MongoDB', () => {
       const res = await test200();
       expect(res.status).toBe(200);
 
-      const fileInDb = await File.findOne({ name: validFile.name, authorUsername: user.username });
+      const fileInDb = await File.findOne({ _id: res.data.file._id });
       expect(fileInDb).not.toBeNull();
 
       // test status 400
@@ -71,9 +71,8 @@ describe('Connect to MongoDB', () => {
       const res = await test200();
       expect(res.status).toBe(200);
 
-      const fileInDb = await File.findOne({ name: file.name, authorUsername: user.username });
-      let like = fileInDb.likes.find(like => like.authorUsername === user.username);
-      expect(like).not.toBeUndefined();
+      let like = await File.findOne({ _id: fileInstance._id, 'likes.authorUsername': user.username });
+      expect(like).not.toBeNull();
 
       // test status 400
       function test400 () {
@@ -91,9 +90,8 @@ describe('Connect to MongoDB', () => {
       const res200Unliking = await test200Unliking();
       expect(res200Unliking.status).toBe(200);
 
-      const fileInDbUnliking = await File.findOne({ name: file.name, authorUsername: user.username });
-      like = fileInDbUnliking.likes.find(like => like.authorUsername === user.username);
-      expect(like).toBeUndefined();
+      like = await File.findOne({ _id: fileInstance._id, 'likes.authorUsername': user.username });
+      expect(like).toBeNull();
 
       // test status 404
       const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
@@ -118,9 +116,8 @@ describe('Connect to MongoDB', () => {
       const res = await test200();
       expect(res.status).toBe(200);
 
-      const fileInDb = await File.findOne({ name: file.name, authorUsername: user.username });
-      const comment = fileInDb.comments.find(c => c.content === 'test comment');
-      expect(comment).not.toBeUndefined();
+      const comment = await File.findOne({ _id: fileInstance._id, 'comments.authorUsername': user.username });
+      expect(comment).not.toBeNull();
 
       // test status 404
       const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';

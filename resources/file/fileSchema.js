@@ -82,4 +82,4 @@ fileSchema.statics.deleteTestFiles = async function () {
 const Layer = mongoose.model('Layer', layerSchema);
 const File = mongoose.model('File', fileSchema);
 
-module.exports = { File };
+module.exports = { File, Layer };

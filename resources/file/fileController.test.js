@@ -72,9 +72,26 @@ describe('Connect to MongoDB', () => {
       expect(res.status).toBe(200);
 
       const fileInDb = await File.findOne({ name: file.name, authorUsername: user.username });
-      expect(fileInDb.likes).toContainEqual(
-        expect.objectContaining({ authorUsername: user.username }),
-      );
+      expect(fileInDb.likes.find(like => like.authorUsername === user.username) != null).toBe(true);
+
+      // test status 400
+      function test400 () {
+        return apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig);
+      }
+
+      const res400 = await test400().catch(err => err.response);
+      expect(res400.status).toBe(400);
+
+      // test status 200 for unliking
+      function test200Unliking () {
+        return apiClient.post(`/api/files/${validFileId}/like`, { liked: false }, apiClientConfig);
+      }
+
+      const res200Unliking = await test200Unliking();
+      expect(res200Unliking.status).toBe(200);
+
+      const fileInDbUnliking = await File.findOne({ name: file.name, authorUsername: user.username });
+      expect(fileInDbUnliking.likes.find(l => l.authorUsername === user.username) == null).toBe(true);
 
       // test status 404
       const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
@@ -100,9 +117,7 @@ describe('Connect to MongoDB', () => {
       expect(res.status).toBe(200);
 
       const fileInDb = await File.findOne({ name: file.name, authorUsername: user.username });
-      expect(fileInDb.comments).toContainEqual(
-        expect.objectContaining({ authorUsername: user.username, content: 'test comment' }),
-      );
+      expect(fileInDb.comments.find(c => c.content === 'test comment') != null).toBe(true);
 
       // test status 404
       const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';

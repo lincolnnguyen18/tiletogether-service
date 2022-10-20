@@ -72,7 +72,8 @@ describe('Connect to MongoDB', () => {
       expect(res.status).toBe(200);
 
       const fileInDb = await File.findOne({ name: file.name, authorUsername: user.username });
-      expect(fileInDb.likes.find(like => like.authorUsername === user.username) != null).toBe(true);
+      let like = fileInDb.likes.find(like => like.authorUsername === user.username);
+      expect(like != null).toBe(true);
 
       // test status 400
       function test400 () {
@@ -91,7 +92,8 @@ describe('Connect to MongoDB', () => {
       expect(res200Unliking.status).toBe(200);
 
       const fileInDbUnliking = await File.findOne({ name: file.name, authorUsername: user.username });
-      expect(fileInDbUnliking.likes.find(l => l.authorUsername === user.username) == null).toBe(true);
+      like = fileInDbUnliking.likes.find(like => like.authorUsername === user.username);
+      expect(like == null).toBe(true);
 
       // test status 404
       const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
@@ -117,7 +119,8 @@ describe('Connect to MongoDB', () => {
       expect(res.status).toBe(200);
 
       const fileInDb = await File.findOne({ name: file.name, authorUsername: user.username });
-      expect(fileInDb.comments.find(c => c.content === 'test comment') != null).toBe(true);
+      const comment = fileInDb.comments.find(c => c.content === 'test comment');
+      expect(comment != null).toBe(true);
 
       // test status 404
       const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';

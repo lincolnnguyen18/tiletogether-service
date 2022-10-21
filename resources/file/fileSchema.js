@@ -4,7 +4,7 @@ const _ = require('lodash');
 const mongoose = require('mongoose');
 
 const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals', 'plants', 'food', 'weapons', 'misc'];
-const tileSizes = [16, 32, 64, 128, 256];
+const tileDimensions = [16, 32, 64, 128, 256];
 
 const layerSchema = Schema({
   name: { type: String, required: true },
@@ -30,14 +30,14 @@ layerSchema.methods.newRandomLayer = function () {
 };
 
 const fileSchema = Schema({
-  authorUsername: { type: String, required: true },
+  authorUsername: { type: String, required: true, index: true },
   comments: [new Schema({
-    authorUsername: { type: String, required: true },
+    authorUsername: { type: String, required: true, index: true },
     content: { type: String, required: true },
     createdAt: { type: Date, required: true, default: Date.now },
   })],
   likes: [new Schema({
-    authorUsername: { type: String, required: true },
+    authorUsername: { type: String, required: true, index: true },
     createdAt: { type: Date, required: true, default: Date.now },
   })],
   createdAt: { type: Date, default: Date.now, required: true },
@@ -47,30 +47,31 @@ const fileSchema = Schema({
   rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
   sharedWith: [String],
   tags: [String],
-  tileDimension: { type: Number, required: [true, 'Tile dimension is required'] },
+  tileDimension: { type: Number, required: [true, 'Tile dimension is required'], index: true },
   tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
-  type: { type: String, required: true, enum: ['map', 'tileset'] },
+  type: { type: String, required: true, enum: ['map', 'tileset'], index: true },
   updatedAt: { type: Date, default: Date.now, required: true },
-  visibility: { type: String, required: true, enum: ['public', 'private'] },
+  visibility: { type: String, required: true, enum: ['public', 'private'], index: true },
   width: { type: Number, min: 1, required: [true, 'Width is required'] },
 });
 
 fileSchema.statics.newTestFile = async function (authorUsername) {
   const createdAt = faker.date.past();
   const updatedAt = faker.date.between(createdAt, new Date());
+  const tileDimension = _.sample(tileDimensions);
 
   return {
     name: faker.random.words(_.random(1, 5)) + '_test_file',
     authorUsername,
-    tileDimension: _.sample(tileSizes),
+    tileDimension,
     tags: _.sampleSize(tags, _.random(1, 4)),
     createdAt,
     updatedAt,
     rootLayer: (await Layer.create({ name: faker.random.words(_.random(1, 5)), type: 'group' }))._id,
     type: _.sample(['map', 'tileset']),
     visibility: _.sample(['public', 'private']),
-    width: _.random(1, 100),
-    height: _.random(1, 100),
+    width: _.random(1, 50) * tileDimension,
+    height: _.random(1, 50) * tileDimension,
   };
 };
 
@@ -81,4 +82,4 @@ fileSchema.statics.deleteTestFiles = async function () {
 const Layer = mongoose.model('Layer', layerSchema);
 const File = mongoose.model('File', fileSchema);
 
-module.exports = { File };
+module.exports = { File, Layer };

@@ -7,7 +7,7 @@
 4. Run `npm install` in the root directory
 5. Make sure MongoDB is running on port 27017
 6. Run `npm run start` in the root directory
-7. Go to `localhost:3001/health` and you should see `OK`
+7. Go to `localhost:3001/api/health` and you should see `OK`
 8. Run `npm run test` to run tests
 
 ## Reviewing a PR
@@ -19,9 +19,9 @@ Run some of the commands below to make sure the PR is safe to merge
 * `npm install`
 * `npm run test`
 * `npm run start`
-* curl `localhost:3001/health` (once the server is running)
+* curl `localhost:3001/api/health` (once the server is running)
 
-Once the serving is running, you can go to `localhost:3001/health` to see if the server is running
+Once the serving is running, you can go to `localhost:3001/api/health` to see if the server is running
 
 ## Workflow
 

@@ -1,12 +1,14 @@
-const { Schema } = require('mongoose');
 const { faker } = require('@faker-js/faker');
 const _ = require('lodash');
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
 const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals', 'plants', 'food', 'weapons', 'misc'];
 const tileDimensions = [16, 32, 64, 128, 256];
+const tileSizes = [16, 32, 64, 128, 256];
+const filePerPage = Number(process.env.FILES_PER_PAGE);
 
-const layerSchema = Schema({
+const layerSchema = new Schema({
   name: { type: String, required: true },
   opacity: { type: Number, default: 1, required: true, min: 0, max: 1 },
   properties: new Schema({
@@ -77,6 +79,29 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
 
 fileSchema.statics.deleteTestFiles = async function () {
   await this.deleteMany({ name: /_test_file/ });
+};
+
+fileSchema.statics.findOwnedFiles = async function(authorUsername, page) {
+  const files = await this.find({ authorUsername: authorUsername})
+    .skip(page * filePerPage)
+    .limit(filePerPage)
+    .catch(() => null);
+
+  return files;
+};
+
+fileSchema.statics.SearchFiles = async function(term, rankBy, filterBy, page) {
+  const files = await this.find({$or:[{authorUsername: term},{name: term},{}]})
+    .sort()
+    .skip(page * filePerPage)
+    .limit(filePerPage)
+    .catch(() => null);
+
+  if(files === null) {
+    return null;
+  }
+
+  return files;
 };
 
 const Layer = mongoose.model('Layer', layerSchema);

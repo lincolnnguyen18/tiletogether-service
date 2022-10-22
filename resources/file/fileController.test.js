@@ -2,7 +2,7 @@ const { setupApp, teardownApp, apiClient } = require('../../utils/testingUtils')
 const { app } = require('../../app');
 const mongoose = require('mongoose');
 const { User } = require('../user/userSchema');
-const { File, editFileFields, viewFileFields } = require('./fileSchema');
+const { File, editFileFields, viewFileFields, Layer } = require('./fileSchema');
 const _ = require('lodash');
 
 let server;
@@ -199,6 +199,63 @@ describe('Connect to MongoDB', () => {
         await fileInstance.save();
         const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig);
         expect(res.status).toBe(200);
+      });
+    });
+
+    describe('query files', () => {
+      const numUsers = 3;
+      const numFiles = 30;
+
+      const users = [];
+      const files = [];
+
+      beforeAll(async () => {
+        await User.deleteMany({});
+        await File.deleteMany({});
+        await Layer.deleteMany({});
+
+        for (let i = 0; i < numUsers; i++) {
+          const user = await User.create(User.newTestUser());
+          users.push(user);
+        }
+
+        // Create files
+        for (let i = 0; i < numFiles; i++) {
+          const randomUser = _.sample(users);
+          const file = await File.newTestFile(randomUser.username);
+          const fileInstance = await File.create(file);
+          files.push(fileInstance);
+        }
+      });
+
+      beforeEach(async () => {
+        apiClientConfig.params = {};
+      });
+
+      test('status 200 for all files without any search options', async () => {
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+      });
+
+      test('status 200 for all files with some search options', async () => {
+        apiClientConfig.params = {
+          keywords: `${_.sample(users).username} ${_.sample(files).name}`,
+          tile_dimension: '16',
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+      });
+
+      test('status 200 for files of a user', async () => {
+        const randomUser = _.sample(users);
+        apiClientConfig.params = {
+          author_username: randomUser.username,
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        res.data.files.forEach(file => {
+          expect(file.authorUsername).toBe(randomUser.username);
+        });
       });
     });
   });

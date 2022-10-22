@@ -9,6 +9,8 @@
 6. Run `npm run start` in the root directory
 7. Go to `localhost:3001/api/health` and you should see `OK`
 8. Run `npm run test` to run tests
+9. Run `node utils/addMockData.js` to add mock data to the database
+10. Go to `node utils/deleteMockData.js` to delete all mock data from the database (users with usernames ending with '_test_user' and files with nanes ending with '_test_file')
 
 ## Reviewing a PR
 

@@ -30,7 +30,7 @@ layerSchema.methods.newRandomLayer = function () {
 };
 
 const fileSchema = Schema({
-  authorUsername: { type: String, required: true, index: true },
+  authorUsername: { type: String, required: true, index: true, text: true },
   comments: [new Schema({
     authorUsername: { type: String, required: true, index: true },
     content: { type: String, required: true },
@@ -43,10 +43,10 @@ const fileSchema = Schema({
   createdAt: { type: Date, default: Date.now, required: true },
   height: { type: Number, min: 1, required: [true, 'Height is required'] },
   imageUrl: String,
-  name: { type: String, required: [true, 'Name is required'] },
+  name: { type: String, required: [true, 'Name is required'], text: true },
   rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
   sharedWith: [String],
-  tags: [String],
+  tags: { type: String, text: true },
   tileDimension: { type: Number, required: [true, 'Tile dimension is required'], index: true },
   tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
   type: { type: String, required: true, enum: ['map', 'tileset'], index: true },
@@ -64,7 +64,7 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
     name: faker.random.words(_.random(1, 5)) + '_test_file',
     authorUsername,
     tileDimension,
-    tags: _.sampleSize(tags, _.random(1, 4)),
+    tags: _.sampleSize(tags, _.random(1, 4)).join(' '),
     createdAt,
     updatedAt,
     rootLayer: (await Layer.create({ name: faker.random.words(_.random(1, 5)), type: 'group' }))._id,

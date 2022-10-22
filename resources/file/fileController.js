@@ -27,6 +27,7 @@ FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
 async function getFiles () {
   // TODO: implement
   throw new Error('Not implemented');
+  // const { keywords, tileDimension, type, width, height, lastId } = req.query;
 }
 
 async function getFileToView (req, res) {

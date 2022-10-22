@@ -25,10 +25,25 @@ FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 // add comment to a file
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
 
-async function getFiles () {
-  // TODO: implement
-  throw new Error('Not implemented');
-  // const { keywords, tileDimension, type, width, height, lastId } = req.query;
+// Two modes:
+// Self - all the files owned/accessible by the local user(which is passed in by searchTerm)
+// Community - files viewed by the user with certain or no custom filters
+async function getFiles (req, res) {
+  const { mode, searchTerm, rankBy, filterBy, page } = req.body;
+
+  if(mode !== 'self' && mode !== 'community') {
+    handleError(res, 404);
+    return;
+  }
+
+  const results = mode === 'self' ? File.findOwnedFiles(searchTerm, page) : File.SearchFiles(searchTerm, rankBy, filterBy, page);
+
+  if(results === null) {
+    handleError(res, 500);
+    return;
+  }
+
+  res.json({ query: results });
 }
 
 async function getFileToView (req, res) {

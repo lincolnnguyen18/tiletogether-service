@@ -3,7 +3,6 @@ const { app } = require('../../app');
 const mongoose = require('mongoose');
 const { User } = require('../user/userSchema');
 const { File } = require('./fileSchema');
-const _ = require('lodash');
 
 let server;
 
@@ -35,126 +34,140 @@ describe('Connect to MongoDB', () => {
   });
 
   describe('File API lets user', () => {
-    test('upload file', async () => {
-      // test status 200
-      const validFile = await File.newTestFile(user.username);
-      function test200 () {
-        return apiClient.post('/api/files', validFile, apiClientConfig);
-      }
-      const res = await test200();
-      expect(res.status).toBe(200);
-
-      const fileInDb = await File.findOne({ _id: res.data.file._id });
-      expect(fileInDb).not.toBeNull();
-
-      // test status 400
-      const invalidFile = await File.newTestFile(user.username);
-      invalidFile.name = '';
-      function test400 () {
-        return apiClient.post('/api/files', invalidFile, apiClientConfig);
-      }
-      const res400 = await test400().catch(err => err.response);
-      expect(res400.status).toBe(400);
-      expect(res400.data.error.name).toBe('Name is required');
+    describe('upload file', () => {
+      test('status 200', async () => {
+        const validFile = await File.newTestFile(user.username);
+        const res = await apiClient.post('/api/files', validFile, apiClientConfig);
+        expect(res.status).toBe(200);
+      });
+      test('status 400', async () => {
+        const invalidFile = await File.newTestFile(user.username);
+        invalidFile.name = '';
+        const res400 = await apiClient.post('/api/files', invalidFile, apiClientConfig).catch(err => err.response);
+        expect(res400.status).toBe(400);
+        expect(res400.data.error.name).toBe('Name is required');
+      });
     });
 
-    test('like a file', async () => {
-      const file = await File.newTestFile(user.username);
-      const fileInstance = await File.create(file);
+    describe('like a file', () => {
+      let file, fileInstance, validFileId;
 
-      // test status 200
-      const validFileId = fileInstance._id;
-      function test200 () {
-        return apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig);
-      }
+      beforeAll(async () => {
+        file = await File.newTestFile(user.username);
+        fileInstance = await File.create(file);
+        validFileId = fileInstance._id;
+      });
 
-      const res = await test200();
-      expect(res.status).toBe(200);
+      test('status 200', async () => {
+        const res = await apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig);
+        expect(res.status).toBe(200);
+      });
 
-      let like = await File.findOne({ _id: fileInstance._id, 'likes.authorUsername': user.username });
-      expect(like).not.toBeNull();
+      test('status 400', async () => {
+        const res400 = await apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig).catch(err => err.response);
+        expect(res400.status).toBe(400);
+      });
 
-      // test status 400
-      function test400 () {
-        return apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig);
-      }
+      test('status 200 for unliking', async () => {
+        const res200Unliking = await apiClient.post(`/api/files/${validFileId}/like`, { liked: false }, apiClientConfig);
+        expect(res200Unliking.status).toBe(200);
+      });
 
-      const res400 = await test400().catch(err => err.response);
-      expect(res400.status).toBe(400);
-
-      // test status 200 for unliking
-      function test200Unliking () {
-        return apiClient.post(`/api/files/${validFileId}/like`, { liked: false }, apiClientConfig);
-      }
-
-      const res200Unliking = await test200Unliking();
-      expect(res200Unliking.status).toBe(200);
-
-      like = await File.findOne({ _id: fileInstance._id, 'likes.authorUsername': user.username });
-      expect(like).toBeNull();
-
-      // test status 404
-      const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
-      function test404 () {
-        return apiClient.post(`/api/files/${invalidFileId}/like`, { liked: true }, apiClientConfig);
-      }
-
-      const error = await test404().catch(err => err.response);
-      expect(error.status).toBe(404);
+      test('status 404', async () => {
+        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+        const error = await apiClient.post(`/api/files/${invalidFileId}/like`, { liked: true }, apiClientConfig).catch(err => err.response);
+        expect(error.status).toBe(404);
+      });
     });
 
-    test('comment on a file', async () => {
-      const file = await File.newTestFile(user.username);
-      const fileInstance = await File.create(file);
+    describe('comment on a file', () => {
+      let file, fileInstance, validFileId;
 
-      // test status 200
-      const validFileId = fileInstance._id;
-      function test200 () {
-        return apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
-      }
+      beforeAll(async () => {
+        file = await File.newTestFile(user.username);
+        fileInstance = await File.create(file);
+        validFileId = fileInstance._id;
+      });
 
-      const res = await test200();
-      expect(res.status).toBe(200);
+      test('status 200', async () => {
+        const res = await apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
+        expect(res.status).toBe(200);
+      });
 
-      const comment = await File.findOne({ _id: fileInstance._id, 'comments.authorUsername': user.username });
-      expect(comment).not.toBeNull();
-
-      // test status 404
-      const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
-      function test404 () {
-        return apiClient.post(`/api/files/${invalidFileId}/comment`, { content: 'test comment' }, apiClientConfig);
-      }
-
-      const error = await test404().catch(err => err.response);
-      expect(error.status).toBe(404);
+      test('status 404', async () => {
+        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+        const error = await apiClient.post(`/api/files/${invalidFileId}/comment`, { content: 'test comment' }, apiClientConfig).catch(err => err.response);
+        expect(error.status).toBe(404);
+      });
     });
 
-    test('get a file to view', async () => {
-      const file = await File.newTestFile(user.username);
-      const fileInstance = await File.create(file);
+    describe('get a file to view', () => {
+      let file, fileInstance, validFileId;
 
-      // test status 200
-      const validFileId = fileInstance._id;
-      function test200 () {
-        return apiClient.get(`/api/files/${validFileId}`, apiClientConfig);
-      }
+      beforeAll(async () => {
+        file = await File.newTestFile(user.username);
+        fileInstance = await File.create(file);
+        validFileId = fileInstance._id;
+      });
 
-      const res = await test200();
-      expect(res.status).toBe(200);
+      test('status 200', async () => {
+        const res = await apiClient.get(`/api/files/${validFileId}`, apiClientConfig);
+        expect(res.status).toBe(200);
+      });
 
-      const fields = ['id', 'authorUsername', 'comments', 'createdAt', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width'];
-      const fileFields = Object.keys(res.data.file);
-      const difference = _.difference(fields, fileFields);
-      expect(difference).toEqual([]);
+      test('status 404', async () => {
+        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+        const error = await apiClient.get(`/api/files/${invalidFileId}`, apiClientConfig).catch(err => err.response);
+        expect(error.status).toBe(404);
+      });
+    });
 
-      // test status 404
-      const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
-      function test404 () {
-        return apiClient.get(`/api/files/${invalidFileId}`, apiClientConfig);
-      }
+    describe('get a file to edit', () => {
+      let file, fileInstance, validFileId;
+      let user2, user2Instance, apiClientConfig2;
 
-      const error = await test404().catch(err => err.response);
-      expect(error.status).toBe(404);
+      beforeAll(async () => {
+        file = await File.newTestFile(user.username);
+        fileInstance = await File.create(file);
+        validFileId = fileInstance._id;
+
+        user2 = User.newTestUser();
+        user2Instance = await User.create(user2);
+        apiClientConfig2 = {
+          headers: {
+            withCredentials: true,
+            Authorization: `Bearer ${user2Instance.generateAuthToken()}`,
+          },
+        };
+      });
+
+      test('status 200', async () => {
+        const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig);
+        expect(res.status).toBe(200);
+      });
+
+      test('status 404', async () => {
+        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+        const error = await apiClient.get(`/api/files/${invalidFileId}/edit`, apiClientConfig).catch(err => err.response);
+        expect(error.status).toBe(404);
+      });
+
+      test('status 403 for not logged in user', async () => {
+        const error = await apiClient.get(`/api/files/${validFileId}/edit`).catch(err => err.response);
+        expect(error.status).toBe(403);
+      });
+
+      test('status 403 for not owner', async () => {
+        const error = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig2).catch(err => err.response);
+        expect(error.status).toBe(403);
+      });
+
+      test('status 200 for shared user', async () => {
+        fileInstance.sharedWith.push(user2.username);
+        await fileInstance.save();
+        const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig);
+        expect(res.status).toBe(200);
+      });
     });
   });
 });

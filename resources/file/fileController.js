@@ -25,6 +25,7 @@ FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
 
 async function getFiles () {
+  // TODO: implement
   throw new Error('Not implemented');
 }
 
@@ -39,8 +40,20 @@ async function getFileToView (req, res) {
   res.json({ file: pickedFile });
 }
 
-async function getFileToEdit () {
-  throw new Error('Not implemented');
+async function getFileToEdit (req, res) {
+  const file = await File.findById(req.params.id);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
+
+  if (file.authorUsername !== req.user.username && !file.sharedWith.includes(req.user.username)) {
+    handleError(res, 403);
+    return;
+  }
+
+  const pickedFile = _.pick(file, ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'visibility', 'width']);
+  res.json({ file: pickedFile });
 }
 
 async function postFile (req, res) {
@@ -58,10 +71,12 @@ async function postFile (req, res) {
 }
 
 async function patchFile () {
+  // TODO: implement
   throw new Error('Not implemented');
 }
 
 async function deleteFile () {
+  // TODO: implement
   throw new Error('Not implemented');
 }
 

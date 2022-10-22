@@ -3,6 +3,8 @@ const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
 const { File } = require('./fileSchema.js');
 const { handleError, mapErrors } = require('../../utils/errorUtils');
 const _ = require('lodash');
+const { mapKeysToCamelCase } = require('../../utils/stringUtils');
+const { editFileFields, viewFileFields } = require('./fileSchema');
 
 const FileRouter = express.Router();
 
@@ -24,25 +26,33 @@ FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 // add comment to a file
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
 
-// Two modes:
-// Self - all the files owned/accessible by the local user(which is passed in by searchTerm)
-// Community - files viewed by the user with certain or no custom filters
 async function getFiles (req, res) {
-  const { mode, searchTerm, rankBy, filterBy, page } = req.body;
+  req.query = mapKeysToCamelCase(req.query);
+  const { keywords, lastId } = req.query;
 
-  if(mode !== 'self' && mode !== 'community') {
-    handleError(res, 404);
-    return;
+  const query = {};
+
+  if (keywords != null) {
+    query.$text = { $search: keywords };
   }
 
-  const results = mode === 'self' ? File.findOwnedFiles(searchTerm, page) : File.SearchFiles(searchTerm, rankBy, filterBy, page);
+  ['tileDimension', 'type', 'width', 'height', 'authorUsername'].forEach(key => {
+    if (req.query[key] != null) {
+      query[key] = req.query[key];
+    }
+  });
 
-  if(results === null) {
-    handleError(res, 500);
-    return;
+  if (lastId != null) {
+    query._id = { $lt: lastId };
   }
 
-  res.json({ query: results });
+  const files = await File.find(query)
+    .sort({ _id: -1, createdAt: -1 })
+    .limit(10)
+    .select(viewFileFields.join(' '))
+    .catch(() => []);
+
+  res.json({ files });
 }
 
 async function getFileToView (req, res) {
@@ -52,7 +62,7 @@ async function getFileToView (req, res) {
     return;
   }
 
-  const pickedFile = _.pick(file, ['id', 'authorUsername', 'comments', 'createdAt', 'height', 'imageUrl', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width']);
+  const pickedFile = _.pick(file, viewFileFields);
   res.json({ file: pickedFile });
 }
 
@@ -68,22 +78,24 @@ async function getFileToEdit (req, res) {
     return;
   }
 
-  const pickedFile = _.pick(file, ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'visibility', 'width']);
+  const pickedFile = _.pick(file, editFileFields);
   res.json({ file: pickedFile });
 }
 
 async function postFile (req, res) {
-  const file = req.body;
+  let file = req.body;
 
   file.authorUsername = req.user.username;
-  const fileInstance = new File(file);
-  const createRes = await File.create(fileInstance).catch(err => err);
+  file = new File(file);
+  const createRes = await File.create(file).catch(err => err);
 
   if (createRes.errors != null) {
     handleError(res, 400, mapErrors(createRes.errors));
     return;
   }
-  res.json({ message: 'File created', file: fileInstance });
+
+  const pickedFile = _.pick(file, editFileFields);
+  res.json({ message: 'File created', file: pickedFile });
 }
 
 async function patchFile () {
@@ -114,12 +126,14 @@ async function setFileLike (req, res) {
 
   if (liked) {
     file.likes.push({ authorUsername: req.user.username, createdAt: Date.now() });
+    req.user.likedFiles.push(file.id);
   } else if (!liked) {
     file.likes = file.likes.filter(like => like.authorUsername !== req.user.username);
+    req.user.likedFiles.pull(file.id);
   }
 
-  const saveRes = await file.save().catch(() => {});
-  if (saveRes == null) {
+  const saveRes = await Promise.all([file.save(), req.user.save()]).catch(() => {});
+  if (saveRes.length === 0) {
     handleError(res, 500);
     return;
   }

@@ -4,7 +4,7 @@ const { setupApp, teardownApp } = require('./testingUtils');
 const { User } = require('../resources/user/userSchema');
 const { File } = require('../resources/file/fileSchema');
 const _ = require('lodash');
-const numUsers = 10;
+const numUsers = 3;
 const numFiles = 30;
 
 const users = [];

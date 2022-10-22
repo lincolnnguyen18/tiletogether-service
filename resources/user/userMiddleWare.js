@@ -1,4 +1,5 @@
 const { User } = require('./userSchema.js');
+const { handleError } = require('../../utils/errorUtils');
 
 async function isNotLoggedIn (req, res, next) {
   if (req.headers.authorization == null) {
@@ -9,7 +10,7 @@ async function isNotLoggedIn (req, res, next) {
   if (token) {
     const user = await User.findByToken(token);
     if (user) {
-      res.redirect('/');
+      handleError(res, 403);
     } else {
       next();
     }
@@ -20,7 +21,7 @@ async function isNotLoggedIn (req, res, next) {
 
 async function isLoggedIn (req, res, next) {
   if (req.headers.authorization == null) {
-    next();
+    handleError(res, 403);
     return;
   }
   const token = req.headers.authorization.replace('Bearer ', '');
@@ -31,7 +32,7 @@ async function isLoggedIn (req, res, next) {
       next();
     }
   } else {
-    res.redirect('/login');
+    handleError(res, 403);
   }
 }
 

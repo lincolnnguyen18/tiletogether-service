@@ -52,9 +52,7 @@ async function postUser (req, res) {
   const { username, password, confirmPassword, email } = req.body;
   let errors = {};
 
-  if (confirmPassword == null || confirmPassword.trim() === '') {
-    errors.confirmPassword = 'Confirm password is required';
-  } else if (password !== confirmPassword) {
+  if (password !== confirmPassword) {
     errors.confirmPassword = 'Passwords do not match';
   }
 

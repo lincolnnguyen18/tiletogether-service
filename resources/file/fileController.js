@@ -28,36 +28,87 @@ FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
 
 async function getFiles (req, res) {
   req.query = mapKeysToCamelCase(req.query);
-  const { keywords, lastId, lastComment, lastLikes, lastPublish, lastUpdate } = req.query;
+  let { keywords, continuationToken, authorUsername, limit, sortBy, mode } = req.query;
+  continuationToken = continuationToken ? JSON.parse(continuationToken) : null;
 
-  const query = {};
+  const findQuery = {};
+  const sortByQuery = [];
 
   if (keywords != null) {
-    query.$text = { $search: keywords };
+    findQuery.$text = { $search: keywords };
   }
 
-  ['tileDimension', 'type', 'width', 'height', 'authorUsername', 'visibility'].forEach(key => {
+  if ((mode === 'likes' || mode === 'shared') && req.user == null) {
+    handleError(res, 401);
+    return;
+  }
+
+  // mode
+  if (mode === 'likes') {
+    findQuery.likes = { $elemMatch: { username: req.user.username } };
+  } else if (mode === 'shared') {
+    findQuery.sharedWith = { $elemMatch: { $eq: req.user.username } };
+  }
+
+  // filters
+  ['tileDimension', 'type', 'authorUsername'].forEach(key => {
     if (req.query[key] != null) {
-      query[key] = req.query[key];
+      findQuery[key] = req.query[key];
     }
   });
 
-  if (lastId != null) query._id = { $lt: lastId };
-  if (lastComment != null) query.commentCount = getPagingCondition(lastComment);
-  if (lastLikes != null) query.likeCount = getPagingCondition(lastLikes);
-  if (lastPublish != null) query.createdAt = getPagingCondition(lastPublish);
-  if (lastUpdate != null) query.updatedAt = getPagingCondition(lastUpdate);
+  // sort by's
+  switch (sortBy) {
+    case 'publish_date':
+      if (continuationToken != null) {
+        findQuery.publishedAt = { $lt: continuationToken.publishedAt };
+      }
+      sortByQuery.push(['publishedAt', -1]);
+      break;
+    case 'update_date':
+      if (continuationToken != null) {
+        findQuery.updatedAt = { $lt: continuationToken.updatedAt };
+      }
+      sortByQuery.push(['updatedAt', -1]);
+      break;
+    case 'likes':
+      if (continuationToken != null) {
+        findQuery.likeCount = { $lt: continuationToken.likeCount };
+      }
+      sortByQuery.push(['likeCount', -1]);
+      break;
+    default:
+      if ((authorUsername != null && req.user && authorUsername === req.user.username) || mode === 'shared') {
+        sortByQuery.push(['updatedAt', -1]);
+        if (continuationToken != null) {
+          findQuery.updatedAt = { $lt: continuationToken.updatedAt };
+        }
+      } else {
+        sortByQuery.push(['publishedAt', -1]);
+        if (continuationToken != null) {
+          findQuery.publishedAt = { $lt: continuationToken.publishedAt };
+        }
+      }
+      break;
+  }
+  sortByQuery.push(['_id', -1]);
 
-  const sortCondition = [];
-  ['commentCount', 'likeCount', 'createdAt', 'updatedAt'].forEach(sortKey => {
-    if (req.query[sortKey] != null) {
-      sortCondition.push([sortKey, req.query[sortKey]]);
+  // show private files only if
+  // 1. user is logged in and is author OR
+  // 2. mode is 'shared'
+  // else
+  if (!((mode === 'shared') || (req.user && authorUsername === req.user.username))) {
+    if (findQuery.publishedAt == null) {
+      findQuery.publishedAt = { $ne: null };
+    } else {
+      findQuery.publishedAt.$ne = null;
     }
-  });
-  sortCondition.push(['_id', -1]);
-  const files = await File.find(query)
-    .sort(sortCondition)
-    .limit(10)
+  }
+
+  const files = await File
+    .find(findQuery)
+    .sort(sortByQuery)
+    .limit(limit ?? 10)
     .select(viewFileFields.join(' '))
     .catch(() => []);
 
@@ -126,23 +177,20 @@ async function setFileLike (req, res) {
     return;
   }
 
-  const currentlyLiked = file.likes.find(l => l.authorUsername === req.user.username) != null;
+  const currentlyLiked = await File.findOne({ _id: req.params.id, likes: { $elemMatch: { username: req.user.username } } }) != null;
 
   if (liked === currentlyLiked) {
     handleError(res, 400, { liked: `File is already ${liked ? 'liked' : 'unliked'}` });
     return;
   }
 
-  if (liked) {
-    file.likes.push({ authorUsername: req.user.username, createdAt: Date.now() });
-    req.user.likedFiles.push(file.id);
-  } else if (!liked) {
-    file.likes = file.likes.filter(like => like.authorUsername !== req.user.username);
-    req.user.likedFiles.pull(file.id);
-  }
-
-  const saveRes = await Promise.all([file.save(), req.user.save()]).catch(() => {});
-  if (saveRes.length === 0) {
+  try {
+    if (liked) {
+      await File.updateOne({ _id: req.params.id }, { $push: { likes: { username: req.user.username, createdAt: Date.now() } } });
+    } else if (!liked) {
+      await File.updateOne({ _id: req.params.id }, { $pull: { likes: { username: req.user.username } } });
+    }
+  } catch (err) {
     handleError(res, 500);
     return;
   }
@@ -159,7 +207,7 @@ async function addCommentToFile (req, res) {
     return;
   }
 
-  file.comments.push({ authorUsername: req.user.username, content, createdAt: Date.now() });
+  file.comments.push({ username: req.user.username, content, createdAt: Date.now() });
 
   const saveRes = await file.save().catch(() => {});
   if (saveRes == null) {
@@ -168,11 +216,6 @@ async function addCommentToFile (req, res) {
   }
 
   res.json({ message: 'Comment added successfully' });
-}
-
-function getPagingCondition (condition) {
-  const { direction, value } = JSON.parse(condition);
-  return direction > 0 ? { $gte: value } : { $lte: value };
 }
 
 module.exports = { FileRouter };

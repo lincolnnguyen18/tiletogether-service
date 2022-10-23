@@ -32,10 +32,6 @@ const UserSchema = new Schema({
     required: [true, 'Email is required'],
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email'],
   },
-  likedFiles: [{
-    type: Schema.Types.ObjectId,
-    ref: 'File',
-  }],
 });
 
 UserSchema.statics.authenticate = async function (email, password) {

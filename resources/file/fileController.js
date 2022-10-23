@@ -28,7 +28,7 @@ FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
 
 async function getFiles (req, res) {
   req.query = mapKeysToCamelCase(req.query);
-  const { keywords, lastId } = req.query;
+  const { keywords, lastId, lastComment, lastLikes, lastPublish, lastUpdate } = req.query;
 
   const query = {};
 
@@ -42,9 +42,11 @@ async function getFiles (req, res) {
     }
   });
 
-  if (lastId != null) {
-    query._id = { $lt: lastId };
-  }
+  if (lastId != null) query._id = { $lt: lastId };
+  if (lastComment != null) query.commentCount = lastComment.direction > 0 ? { $gt: lastComment.value } : { $lt: lastComment.value };
+  if (lastLikes != null) query.likeCount = lastLikes.direction > 0 ? { $gt: lastLikes.value } : { $lt: lastLikes.value };
+  if (lastPublish != null) query.createdAt = lastPublish.direction > 0 ? { $gt: lastPublish.value } : { $lt: lastPublish.value };
+  if (lastUpdate != null) query.updatedAt = lastUpdate.direction > 0 ? { $gt: lastUpdate.value } : { $lt: lastUpdate.value };
 
   const sortCondition = [];
   ['commentCount', 'likeCount', 'createdAt', 'updatedAt'].forEach(sortKey => {

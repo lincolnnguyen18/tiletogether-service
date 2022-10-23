@@ -224,7 +224,6 @@ describe('Connect to MongoDB', () => {
           const randomUser = _.sample(users);
           const file = await File.newTestFile(randomUser.username);
           const fileInstance = await File.create(file);
-          console.log(`${fileInstance.likeCount} ${fileInstance.likes.length}`);
           files.push(fileInstance);
         }
       });

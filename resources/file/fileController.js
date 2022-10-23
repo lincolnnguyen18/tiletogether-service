@@ -36,7 +36,7 @@ async function getFiles (req, res) {
     query.$text = { $search: keywords };
   }
 
-  ['tileDimension', 'type', 'width', 'height', 'authorUsername'].forEach(key => {
+  ['tileDimension', 'type', 'width', 'height', 'authorUsername', 'visibility'].forEach(key => {
     if (req.query[key] != null) {
       query[key] = req.query[key];
     }
@@ -46,8 +46,16 @@ async function getFiles (req, res) {
     query._id = { $lt: lastId };
   }
 
+  const sortCondition = [];
+  ['commentCount', 'likeCount', 'createdAt', 'updatedAt'].forEach(sortKey => {
+    if (req.query[sortKey] != null) {
+      sortCondition.push([sortKey, req.query[sortKey]]);
+    }
+  });
+  sortCondition.push(['_id', -1]);
+
   const files = await File.find(query)
-    .sort({ _id: -1, createdAt: -1 })
+    .sort(sortCondition)
     .limit(10)
     .select(viewFileFields.join(' '))
     .catch(() => []);

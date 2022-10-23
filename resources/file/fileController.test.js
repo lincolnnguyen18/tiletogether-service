@@ -224,6 +224,7 @@ describe('Connect to MongoDB', () => {
           const randomUser = _.sample(users);
           const file = await File.newTestFile(randomUser.username);
           const fileInstance = await File.create(file);
+          console.log(`${fileInstance.likeCount} ${fileInstance.likes.length}`);
           files.push(fileInstance);
         }
       });
@@ -235,15 +236,121 @@ describe('Connect to MongoDB', () => {
       test('status 200 for all files without any search options', async () => {
         const res = await apiClient.get('/api/files', apiClientConfig);
         expect(res.status).toBe(200);
+        expect(res.data.files.length).toBe(10);
       });
 
-      test('status 200 for all files with some search options', async () => {
+      test('status 200 for search files with keywords and tile_dimension', async () => {
+        const username = _.sample(users).username; const filename = _.sample(files).name;
         apiClientConfig.params = {
-          keywords: `${_.sample(users).username} ${_.sample(files).name}`,
-          tile_dimension: '16',
+          keywords: `${username} ${filename}`,
+          tileDimension: 16,
         };
         const res = await apiClient.get('/api/files', apiClientConfig);
         expect(res.status).toBe(200);
+        res.data.files.forEach(file => {
+          expect(file.tileDimension).toBe(16);
+        });
+      });
+
+      test('status 200 for map files', async () => {
+        apiClientConfig.params = {
+          type: 'map',
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        res.data.files.forEach(file => {
+          expect(file.type).toBe('map');
+        });
+      });
+
+      test('status 200 for tileset files', async () => {
+        apiClientConfig.params = {
+          type: 'tileset',
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        res.data.files.forEach(file => {
+          expect(file.type).toBe('tileset');
+        });
+      });
+
+      test('status 200 for files with width & height constraints', async () => {
+        apiClientConfig.params = {
+          width: '960',
+          height: '960',
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        res.data.files.forEach(file => {
+          expect(file.width).toBe(960);
+          expect(file.height).toBe(960);
+        });
+      });
+
+      test('status 200 for public files', async () => {
+        apiClientConfig.params = {
+          visibility: 'public',
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        res.data.files.forEach(file => {
+          expect(file.visibility).toBe('public');
+        });
+      });
+
+      test('status 200 for private files', async () => {
+        apiClientConfig.params = {
+          visibility: 'private',
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        res.data.files.forEach(file => {
+          expect(file.visibility).toBe('private');
+        });
+      });
+
+      test('status 200 for files sorted by number of comments descending', async () => {
+        apiClientConfig.params = {
+          commentCount: -1,
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        for (let i = 1; i < res.data.files.length; i++) {
+          expect(res.data.files[i].comments.length >= res.data.files[i - 1].comments.length).toBe(true);
+        }
+      });
+
+      test('status 200 for files sorted by number of likes descending', async () => {
+        apiClientConfig.params = {
+          likeCount: -1,
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        for (let i = 1; i < res.data.files.length; i++) {
+          expect(res.data.files[i].likes.length >= res.data.files[i - 1].likes.length).toBe(true);
+        }
+      });
+
+      test('status 200 for files sorted by publish date ascending', async () => {
+        apiClientConfig.params = {
+          createdAt: 1,
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        for (let i = 1; i < res.data.files.length; i++) {
+          expect(res.data.files[i].createdAt >= res.data.files[i - 1].createdAt).toBe(true);
+        }
+      });
+
+      test('status 200 for files sorted by update date descending', async () => {
+        apiClientConfig.params = {
+          updatedAt: -1,
+        };
+        const res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        for (let i = 1; i < res.data.files.length; i++) {
+          expect(res.data.files[i].updatedAt <= res.data.files[i - 1].updatedAt).toBe(true);
+        }
       });
 
       test('status 200 for files of a user', async () => {

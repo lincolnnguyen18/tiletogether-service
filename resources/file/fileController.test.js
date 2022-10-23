@@ -5,6 +5,7 @@ const { User } = require('../user/userSchema');
 const { File, editFileFields, viewFileFields, Layer } = require('./fileSchema');
 const _ = require('lodash');
 
+const filePerPage = 10;
 let server;
 
 // Set long Jest timeout to allow for debugging
@@ -235,7 +236,27 @@ describe('Connect to MongoDB', () => {
       test('status 200 for all files without any search options', async () => {
         const res = await apiClient.get('/api/files', apiClientConfig);
         expect(res.status).toBe(200);
-        expect(res.data.files.length).toBe(10);
+        expect(res.data.files.length).toBe(filePerPage);
+      });
+
+      test('status 200 for all files of the first 2 pages', async () => {
+        let res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        const fisrtPage = new Set(res.data.files.map(f => f._id));
+        expect(fisrtPage.size).toBe(filePerPage);
+
+        const lastId = res.data.files[res.data.files.length - 1]._id;
+        apiClientConfig.params = {
+          lastId,
+        };
+        res = await apiClient.get('/api/files', apiClientConfig);
+        const secondPage = res.data.files;
+        expect(res.status).toBe(200);
+        expect(secondPage.length).toBe(filePerPage);
+
+        secondPage.forEach(file => {
+          expect(fisrtPage.has(file._id)).toBe(false);
+        });
       });
 
       test('status 200 for search files with keywords and tile_dimension', async () => {
@@ -308,7 +329,7 @@ describe('Connect to MongoDB', () => {
         });
       });
 
-      test('status 200 for files sorted by number of comments descending', async () => {
+      test('status 200 for the most commented files', async () => {
         apiClientConfig.params = {
           commentCount: -1,
         };
@@ -319,18 +340,43 @@ describe('Connect to MongoDB', () => {
         }
       });
 
-      test('status 200 for files sorted by number of likes descending', async () => {
+      test('status 200 for the trending files', async () => {
         apiClientConfig.params = {
           likeCount: -1,
         };
         const res = await apiClient.get('/api/files', apiClientConfig);
         expect(res.status).toBe(200);
         for (let i = 1; i < res.data.files.length; i++) {
-          expect(res.data.files[i].likes.length >= res.data.files[i - 1].likes.length).toBe(true);
+          expect(res.data.files[i].likeCount >= res.data.files[i - 1].likeCount).toBe(true);
         }
       });
 
-      test('status 200 for files sorted by publish date ascending', async () => {
+      test('status 200 for the trending files(page 2)', async () => {
+        apiClientConfig.params = {
+          likeCount: -1,
+        };
+        let res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        const firstPage = res.data.files;
+        expect(firstPage.length).toBe(filePerPage);
+
+        apiClientConfig.params = {
+          lastLikes: { direction: -1, value: firstPage[firstPage.length - 1].likeCount },
+          likeCount: -1,
+        };
+        res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        const secondPage = res.data.files;
+        expect(secondPage.length).toBe(filePerPage);
+
+        secondPage.forEach(f2 => {
+          firstPage.forEach(f1 => {
+            expect(f2.likeCount >= f1.likeCount).toBe(true);
+          });
+        });
+      });
+
+      test('status 200 for the most recently published files', async () => {
         apiClientConfig.params = {
           createdAt: 1,
         };
@@ -341,7 +387,32 @@ describe('Connect to MongoDB', () => {
         }
       });
 
-      test('status 200 for files sorted by update date descending', async () => {
+      test('status 200 for the most recently published files(page 2)', async () => {
+        apiClientConfig.params = {
+          createdAt: 1,
+        };
+        let res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        const firstPage = res.data.files;
+        expect(firstPage.length).toBe(filePerPage);
+
+        apiClientConfig.params = {
+          lastPublish: { direction: 1, value: firstPage[firstPage.length - 1].createdAt },
+          createdAt: 1,
+        };
+        res = await apiClient.get('/api/files', apiClientConfig);
+        expect(res.status).toBe(200);
+        const secondPage = res.data.files;
+        expect(secondPage.length).toBe(filePerPage);
+
+        secondPage.forEach(f2 => {
+          firstPage.forEach(f1 => {
+            expect(f2.createdAt >= f1.createdAt).toBe(true);
+          });
+        });
+      });
+
+      test('status 200 for the most recently edited files', async () => {
         apiClientConfig.params = {
           updatedAt: -1,
         };

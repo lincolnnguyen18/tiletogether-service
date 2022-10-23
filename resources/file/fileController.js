@@ -43,10 +43,10 @@ async function getFiles (req, res) {
   });
 
   if (lastId != null) query._id = { $lt: lastId };
-  if (lastComment != null) query.commentCount = lastComment.direction > 0 ? { $gt: lastComment.value } : { $lt: lastComment.value };
-  if (lastLikes != null) query.likeCount = lastLikes.direction > 0 ? { $gt: lastLikes.value } : { $lt: lastLikes.value };
-  if (lastPublish != null) query.createdAt = lastPublish.direction > 0 ? { $gt: lastPublish.value } : { $lt: lastPublish.value };
-  if (lastUpdate != null) query.updatedAt = lastUpdate.direction > 0 ? { $gt: lastUpdate.value } : { $lt: lastUpdate.value };
+  if (lastComment != null) query.commentCount = getPagingCondition(lastComment);
+  if (lastLikes != null) query.likeCount = getPagingCondition(lastLikes);
+  if (lastPublish != null) query.createdAt = getPagingCondition(lastPublish);
+  if (lastUpdate != null) query.updatedAt = getPagingCondition(lastUpdate);
 
   const sortCondition = [];
   ['commentCount', 'likeCount', 'createdAt', 'updatedAt'].forEach(sortKey => {
@@ -55,7 +55,6 @@ async function getFiles (req, res) {
     }
   });
   sortCondition.push(['_id', -1]);
-
   const files = await File.find(query)
     .sort(sortCondition)
     .limit(10)
@@ -169,6 +168,11 @@ async function addCommentToFile (req, res) {
   }
 
   res.json({ message: 'Comment added successfully' });
+}
+
+function getPagingCondition (condition) {
+  const { direction, value } = JSON.parse(condition);
+  return direction > 0 ? { $gte: value } : { $lte: value };
 }
 
 module.exports = { FileRouter };

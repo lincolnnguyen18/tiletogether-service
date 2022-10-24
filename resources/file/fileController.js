@@ -158,9 +158,26 @@ async function postFile (req, res) {
   res.json({ message: 'File created', file: pickedFile });
 }
 
-async function patchFile () {
-  // TODO: implement
-  throw new Error('Not implemented');
+async function patchFile (req, res) {
+  const file = await File.findById(req.params.id);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
+
+  if (file.authorUsername !== req.user.username && !file.sharedWith.includes(req.user.username)) {
+    handleError(res, 403);
+    return;
+  }
+
+  const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).catch(err => err);
+  if (updateRes.errors != null) {
+    handleError(res, 400, mapErrors(updateRes.errors));
+    return;
+  }
+
+  const pickedFile = _.pick(updateRes, editFileFields);
+  res.json({ message: 'File updated', file: pickedFile });
 }
 
 async function deleteFile () {

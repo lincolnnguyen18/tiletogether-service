@@ -38,7 +38,6 @@ describe('Connect to MongoDB', () => {
       test('status 200', async () => {
         const validFile = await File.newTestFile(user.username);
         const res = await apiClient.post('/api/files', validFile, apiClientConfig);
-        expect(res.status).toBe(200);
         const fileInDb = await File.findById(res.data.file.id);
         expect(fileInDb).not.toBe(null);
 
@@ -66,8 +65,7 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 200', async () => {
-        const res = await apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig);
-        expect(res.status).toBe(200);
+        await apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig);
         file = await File.findById(validFileId);
 
         const likedFile = await File.findOne({ _id: file._id, 'likes.username': user.username });
@@ -81,8 +79,7 @@ describe('Connect to MongoDB', () => {
         file.likes.push({ username: user.username, createdAt: new Date() });
         await file.save();
 
-        const res200Unliking = await apiClient.post(`/api/files/${validFileId}/like`, { liked: false }, apiClientConfig);
-        expect(res200Unliking.status).toBe(200);
+        await apiClient.post(`/api/files/${validFileId}/like`, { liked: false }, apiClientConfig);
         file = await File.findById(validFileId);
 
         const unlikedFile = await File.findOne({ _id: file._id, 'likes.username': user.username });
@@ -92,6 +89,35 @@ describe('Connect to MongoDB', () => {
       test('status 404', async () => {
         const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
         const error = await apiClient.post(`/api/files/${invalidFileId}/like`, { liked: true }, apiClientConfig).catch(err => err.response);
+        expect(error.status).toBe(404);
+      });
+    });
+
+    describe('patch a file', () => {
+      let file, validFileId;
+
+      beforeAll(async () => {
+        file = await File.newTestFile(user.username);
+        file = await File.create(file);
+        validFileId = file._id;
+      });
+
+      test('status 200', async () => {
+        const newName = 'new name';
+        await apiClient.patch(`/api/files/${validFileId}`, { name: newName }, apiClientConfig);
+        file = await File.findById(validFileId);
+        expect(file.name).toBe(newName);
+      });
+
+      test('status 400', async () => {
+        const res400 = await apiClient.patch(`/api/files/${validFileId}`, { name: '' }, apiClientConfig).catch(err => err.response);
+        expect(res400.status).toBe(400);
+        expect(res400.data.error.name).toBe('Name is required');
+      });
+
+      test('status 404', async () => {
+        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+        const error = await apiClient.patch(`/api/files/${invalidFileId}`, { name: 'new name' }, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
     });

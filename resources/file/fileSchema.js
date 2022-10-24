@@ -7,7 +7,7 @@ const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals'
 const tileDimensions = [16, 32, 64, 128, 256];
 
 const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width'];
-const viewFileFields = ['id', 'authorUsername', 'comments', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt'];
+const viewFileFields = ['id', 'authorUsername', 'comments', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes'];
 
 const layerSchema = Schema({
   name: { type: String, required: true },

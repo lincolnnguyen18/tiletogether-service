@@ -180,9 +180,16 @@ async function patchFile (req, res) {
   res.json({ message: 'File updated', file: pickedFile });
 }
 
-async function deleteFile () {
-  // TODO: implement
-  throw new Error('Not implemented');
+async function deleteFile (_, res) {
+  const file = await File.findById(res.params.id);
+
+  if (file == null) {
+    return handleError(res, 404);
+  }
+
+  await file.delete();
+  const pickedFile = _.pick(file, ['id', 'authorUsername', 'comments', 'createdAt', 'height', 'imageUrl', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width']);
+  res.json({ file: pickedFile });
 }
 
 async function setFileLike (req, res) {

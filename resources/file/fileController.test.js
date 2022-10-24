@@ -65,17 +65,20 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 200', async () => {
+        const likeCount = file.likeCount;
         await apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig);
         file = await File.findById(validFileId);
 
         const likedFile = await File.findOne({ _id: file._id, 'likes.username': user.username });
         expect(likedFile).not.toBeNull();
+        expect(file.likeCount).toBe(likeCount + 1);
 
         const res400 = await apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig).catch(err => err.response);
         expect(res400.status).toBe(400);
       });
 
       test('status 200 for unliking', async () => {
+        const likeCount = file.likeCount;
         file.likes.push({ username: user.username, createdAt: new Date() });
         await file.save();
 
@@ -84,6 +87,7 @@ describe('Connect to MongoDB', () => {
 
         const unlikedFile = await File.findOne({ _id: file._id, 'likes.username': user.username });
         expect(unlikedFile).toBeNull();
+        expect(file.likeCount).toBe(likeCount - 1);
       });
 
       test('status 404', async () => {
@@ -132,11 +136,12 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 200', async () => {
-        const res = await apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
-        expect(res.status).toBe(200);
+        const commentCount = fileInstance.commentCount;
+        await apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
 
         const commentedFile = await File.findOne({ _id: validFileId, 'comments.username': user.username });
         expect(commentedFile).not.toBeNull();
+        expect(commentedFile.commentCount).toBe(commentCount + 1);
       });
 
       test('status 404', async () => {
@@ -157,7 +162,6 @@ describe('Connect to MongoDB', () => {
 
       test('status 200', async () => {
         const res = await apiClient.get(`/api/files/${validFileId}`, apiClientConfig);
-        expect(res.status).toBe(200);
 
         const fileFields = Object.keys(res.data.file);
         const difference = _.difference(viewFileFields, fileFields);
@@ -192,7 +196,6 @@ describe('Connect to MongoDB', () => {
 
       test('status 200', async () => {
         const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig);
-        expect(res.status).toBe(200);
 
         const fileFields = Object.keys(res.data.file);
         const difference = _.difference(editFileFields, fileFields);
@@ -219,7 +222,10 @@ describe('Connect to MongoDB', () => {
         fileInstance.sharedWith.push(user2.username);
         await fileInstance.save();
         const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig);
-        expect(res.status).toBe(200);
+
+        const fileFields = Object.keys(res.data.file);
+        const difference = _.difference(editFileFields, fileFields);
+        expect(difference).toEqual([]);
       });
     });
 

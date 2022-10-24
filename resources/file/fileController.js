@@ -203,9 +203,9 @@ async function setFileLike (req, res) {
 
   try {
     if (liked) {
-      await File.updateOne({ _id: req.params.id }, { $push: { likes: { username: req.user.username, createdAt: Date.now() } } });
+      await File.updateOne({ _id: req.params.id }, { $push: { likes: { username: req.user.username, createdAt: Date.now() } }, $inc: { likeCount: 1 } });
     } else if (!liked) {
-      await File.updateOne({ _id: req.params.id }, { $pull: { likes: { username: req.user.username } } });
+      await File.updateOne({ _id: req.params.id }, { $pull: { likes: { username: req.user.username } }, $inc: { likeCount: -1 } });
     }
   } catch (err) {
     handleError(res, 500);
@@ -224,7 +224,7 @@ async function addCommentToFile (req, res) {
     return;
   }
 
-  file.comments.push({ username: req.user.username, content, createdAt: Date.now() });
+  await File.updateOne({ _id: req.params.id }, { $push: { comments: { username: req.user.username, content, createdAt: Date.now() } }, $inc: { commentCount: 1 } });
 
   const saveRes = await file.save().catch(() => {});
   if (saveRes == null) {

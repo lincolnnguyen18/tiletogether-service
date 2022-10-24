@@ -27,9 +27,17 @@ FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
 
 async function getFiles (req, res) {
+  // query = { keywords, tile_dimension, type, sort_by, mode, limit, authorUsername }
   req.query = mapKeysToCamelCase(req.query);
   let { keywords, continuationToken, authorUsername, limit, sortBy, mode } = req.query;
-  continuationToken = continuationToken ? JSON.parse(continuationToken) : null;
+  if (continuationToken != null) {
+    try {
+      continuationToken = JSON.parse(continuationToken);
+    } catch (err) {
+      handleError(res, 400);
+      return;
+    }
+  }
 
   const findQuery = {};
   const sortByQuery = [];
@@ -38,7 +46,7 @@ async function getFiles (req, res) {
     findQuery.$text = { $search: keywords };
   }
 
-  if ((mode === 'likes' || mode === 'shared') && req.user == null) {
+  if ((mode === 'likes' || mode === 'shared' || mode === 'your_files') && req.user == null) {
     handleError(res, 401);
     return;
   }
@@ -48,6 +56,10 @@ async function getFiles (req, res) {
     findQuery.likes = { $elemMatch: { username: req.user.username } };
   } else if (mode === 'shared') {
     findQuery.sharedWith = { $elemMatch: { $eq: req.user.username } };
+  }
+
+  if (mode === 'your_files') {
+    findQuery.authorUsername = req.user.username;
   }
 
   // filters

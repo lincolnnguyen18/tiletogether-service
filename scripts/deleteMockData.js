@@ -1,8 +1,10 @@
 const { app } = require('../app');
 const mongoose = require('mongoose');
-const { setupApp, teardownApp } = require('./testingUtils');
+const { setupApp, teardownApp } = require('../utils/testingUtils');
 const { User } = require('../resources/user/userSchema');
 const { File } = require('../resources/file/fileSchema');
+const dotenv = require('dotenv');
+dotenv.config({ path: '../.env.development' });
 
 async function main () {
   const server = await setupApp(app, mongoose);

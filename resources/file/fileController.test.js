@@ -55,6 +55,23 @@ describe('Connect to MongoDB', () => {
       });
     });
 
+    describe('delete a file', () => {
+      test('status 200', async () => {
+        const file = await File.newTestFile(user.username);
+        const fileInDb = await File.create(file);
+
+        const res = await apiClient.delete(`/api/files/${fileInDb._id}`, apiClientConfig);
+        const fileFields = Object.keys(res.data.file);
+        const difference = _.difference(viewFileFields, fileFields);
+        expect(difference).toEqual([]);
+      });
+
+      test('status 404', async () => {
+        const error = await apiClient.delete('/api/files/1234', apiClientConfig).catch(err => err.response);
+        expect(error.status).toBe(404);
+      });
+    });
+
     describe('like a file', () => {
       let file, validFileId;
 
@@ -91,7 +108,7 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 404', async () => {
-        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+        const invalidFileId = 'abc';
         const error = await apiClient.post(`/api/files/${invalidFileId}/like`, { liked: true }, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
@@ -120,7 +137,7 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 404', async () => {
-        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+        const invalidFileId = 'abc';
         const error = await apiClient.patch(`/api/files/${invalidFileId}`, { name: 'new name' }, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
@@ -145,7 +162,7 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 404', async () => {
-        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+        const invalidFileId = 'abc';
         const error = await apiClient.post(`/api/files/${invalidFileId}/comment`, { content: 'test comment' }, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
@@ -169,7 +186,7 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 404', async () => {
-        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+        const invalidFileId = 'abc';
         const error = await apiClient.get(`/api/files/${invalidFileId}`, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
@@ -194,6 +211,8 @@ describe('Connect to MongoDB', () => {
         };
       });
 
+      // db.files.find({ _id: ObjectId("63569bd9638fc94060324fdf"), $or: [ { authorUsername: 'car_test_user' }, { sharedWith: { $elemMatch: { $eq: 'car_test_user' } } } ] }).count() === 1
+
       test('status 200', async () => {
         const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig);
 
@@ -202,8 +221,8 @@ describe('Connect to MongoDB', () => {
         expect(difference).toEqual([]);
       });
 
-      test('status 404', async () => {
-        const invalidFileId = '5e9b9b9b9b9b9b9b9b9b9b9b';
+      test('status 404 for non-existent file', async () => {
+        const invalidFileId = 'abc';
         const error = await apiClient.get(`/api/files/${invalidFileId}/edit`, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
@@ -213,15 +232,15 @@ describe('Connect to MongoDB', () => {
         expect(error.status).toBe(403);
       });
 
-      test('status 403 for not owner', async () => {
+      test('status 404 for not owner', async () => {
         const error = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig2).catch(err => err.response);
-        expect(error.status).toBe(403);
+        expect(error.status).toBe(404);
       });
 
       test('status 200 for shared user', async () => {
         fileInstance.sharedWith.push(user2.username);
         await fileInstance.save();
-        const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig);
+        const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig2);
 
         const fileFields = Object.keys(res.data.file);
         const difference = _.difference(editFileFields, fileFields);

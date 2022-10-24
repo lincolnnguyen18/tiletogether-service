@@ -116,7 +116,7 @@ async function getFiles (req, res) {
 }
 
 async function getFileToView (req, res) {
-  const file = await File.findById(req.params.id);
+  const file = await File.findById(req.params.id).catch(() => null);
   if (file == null) {
     handleError(res, 404);
     return;
@@ -127,14 +127,22 @@ async function getFileToView (req, res) {
 }
 
 async function getFileToEdit (req, res) {
-  const file = await File.findById(req.params.id);
+  const file = await File.findById(req.params.id).catch(() => null);
   if (file == null) {
     handleError(res, 404);
     return;
   }
 
-  if (file.authorUsername !== req.user.username && !file.sharedWith.includes(req.user.username)) {
-    handleError(res, 403);
+  const hasAccess = (await File.countDocuments({
+    _id: file._id,
+    $or: [
+      { authorUsername: req.user.username },
+      { sharedWith: { $elemMatch: { $eq: req.user.username } } },
+    ],
+  }).catch(() => 0) === 1);
+
+  if (!hasAccess) {
+    handleError(res, 404);
     return;
   }
 
@@ -159,14 +167,14 @@ async function postFile (req, res) {
 }
 
 async function patchFile (req, res) {
-  const file = await File.findById(req.params.id);
+  const file = await File.findById(req.params.id).catch(() => null);
   if (file == null) {
     handleError(res, 404);
     return;
   }
 
   if (file.authorUsername !== req.user.username && !file.sharedWith.includes(req.user.username)) {
-    handleError(res, 403);
+    handleError(res, 404);
     return;
   }
 
@@ -180,15 +188,22 @@ async function patchFile (req, res) {
   res.json({ message: 'File updated', file: pickedFile });
 }
 
-async function deleteFile () {
-  // TODO: implement
-  throw new Error('Not implemented');
+async function deleteFile (req, res) {
+  const file = await File.findById(req.params.id).catch(() => null);
+
+  if (file == null) {
+    return handleError(res, 404);
+  }
+
+  await file.delete();
+  const pickedFile = _.pick(file, viewFileFields);
+  res.json({ file: pickedFile });
 }
 
 async function setFileLike (req, res) {
   const { liked } = req.body;
 
-  const file = await File.findById(req.params.id);
+  const file = await File.findById(req.params.id).catch(() => null);
   if (file == null) {
     handleError(res, 404);
     return;
@@ -218,7 +233,7 @@ async function setFileLike (req, res) {
 async function addCommentToFile (req, res) {
   const { content } = req.body;
 
-  const file = await File.findById(req.params.id);
+  const file = await File.findById(req.params.id).catch(() => null);
   if (file == null) {
     handleError(res, 404);
     return;

@@ -6,8 +6,8 @@ const mongoose = require('mongoose');
 const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals', 'plants', 'food', 'weapons', 'misc'];
 const tileDimensions = [16, 32, 64, 128, 256];
 
-const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'visibility', 'width'];
-const viewFileFields = ['id', 'authorUsername', 'comments', 'createdAt', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width'];
+const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width'];
+const viewFileFields = ['id', 'authorUsername', 'comments', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt'];
 
 const layerSchema = Schema({
   name: { type: String, required: true },
@@ -35,28 +35,32 @@ layerSchema.methods.newRandomLayer = function () {
 const fileSchema = Schema({
   authorUsername: { type: String, required: true, index: true },
   comments: [new Schema({
-    authorUsername: { type: String, required: true, index: true },
+    username: { type: String, required: true, index: true },
     content: { type: String, required: true },
     createdAt: { type: Date, required: true, default: Date.now },
   })],
+  commentCount: { type: Number, min: 0, required: true, default: 0 },
   likes: [new Schema({
-    authorUsername: { type: String, required: true, index: true },
+    username: { type: String, required: true, index: true },
     createdAt: { type: Date, required: true, default: Date.now },
   })],
+  likeCount: { type: Number, min: 0, required: true, default: 0 },
   createdAt: { type: Date, default: Date.now, required: true },
   height: { type: Number, min: 1, required: [true, 'Height is required'] },
   imageUrl: String,
   name: { type: String, required: [true, 'Name is required'] },
   rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
   sharedWith: [String],
-  tags: [String],
+  tags: { type: String, required: true, index: true },
   tileDimension: { type: Number, required: [true, 'Tile dimension is required'], index: true },
   tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
   type: { type: String, required: true, enum: ['map', 'tileset'], index: true },
   updatedAt: { type: Date, default: Date.now, required: true },
-  visibility: { type: String, required: true, enum: ['public', 'private'], index: true },
+  publishedAt: { type: Date, sparse: true },
   width: { type: Number, min: 1, required: [true, 'Width is required'] },
 });
+
+fileSchema.index({ authorUsername: 'text', name: 'text', tags: 'text' });
 
 fileSchema.statics.newTestFile = async function (authorUsername) {
   const createdAt = faker.date.past();
@@ -67,14 +71,16 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
     name: faker.random.words(_.random(1, 5)) + '_test_file',
     authorUsername,
     tileDimension,
-    tags: _.sampleSize(tags, _.random(1, 4)),
+    tags: _.sampleSize(tags, _.random(1, 4)).join(' '),
     createdAt,
     updatedAt,
     rootLayer: (await Layer.create({ name: faker.random.words(_.random(1, 5)), type: 'group' }))._id,
     type: _.sample(['map', 'tileset']),
-    visibility: _.sample(['public', 'private']),
+    publishedAt: _.sample([null, faker.date.between(createdAt, updatedAt)]),
     width: _.random(1, 50) * tileDimension,
     height: _.random(1, 50) * tileDimension,
+    likeCount: _.random(0, 100),
+    commentCount: _.random(0, 100),
   };
 };
 
@@ -85,4 +91,4 @@ fileSchema.statics.deleteTestFiles = async function () {
 const Layer = mongoose.model('Layer', layerSchema);
 const File = mongoose.model('File', fileSchema);
 
-module.exports = { File, Layer, editFileFields, viewFileFields };
+module.exports = { File, Layer, editFileFields, viewFileFields, tags };

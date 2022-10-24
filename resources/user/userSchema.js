@@ -70,9 +70,8 @@ UserSchema.statics.newTestUser = function () {
   username = username.slice(0, 20 - suffix.length);
   username += suffix;
 
-  if (username.length > 20) {
-    throw new Error(`Username ${username} is too long`);
-  }
+  // remove all non-lowercase alphanumeric characters
+  username = username.replace(/[^a-z0-9]/g, '');
 
   return {
     username,

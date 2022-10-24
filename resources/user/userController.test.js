@@ -3,6 +3,7 @@ const { User } = require('./userSchema.js');
 const _ = require('lodash');
 const { apiClient, setupApp, teardownApp } = require('../../utils/testingUtils.js');
 const { app } = require('../../app.js');
+const { wait } = require('../../utils/testingUtils');
 
 let user;
 let server;
@@ -69,6 +70,7 @@ describe('Connect to MongoDB', () => {
           password: user.password,
         },
       });
+      await wait(100);
       expect(await User.findOne({ username: user.username })).toBeNull();
     });
   });

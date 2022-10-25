@@ -70,8 +70,8 @@ UserSchema.statics.newTestUser = function () {
   username = username.slice(0, 20 - suffix.length);
   username += suffix;
 
-  // remove all non-lowercase alphanumeric characters
-  username = username.replace(/[^a-z0-9]/g, '');
+  // remove all non-lowercase non-underscore alphanumeric characters
+  username = username.replace(/[^a-z0-9_]/g, '');
 
   return {
     username,

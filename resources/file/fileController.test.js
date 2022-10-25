@@ -407,7 +407,7 @@ describe('Connect to MongoDB', () => {
 
         do {
           apiClientConfig.params.continuation_token = continuationToken;
-          const res = await apiClient.get('/api/files', apiClientConfig);
+          const res = await apiClient.get('/api/files?mode=your_files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
             .find({ authorUsername: randomUser.username })

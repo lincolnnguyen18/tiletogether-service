@@ -29,7 +29,7 @@ FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
 async function getFiles (req, res) {
   // query = { keywords, tile_dimension, type, sort_by, mode, limit, authorUsername }
   req.query = mapKeysToCamelCase(req.query);
-  let { keywords, continuationToken, authorUsername, limit, sortBy, mode } = req.query;
+  let { keywords, continuationToken, limit, sortBy, mode } = req.query;
   if (continuationToken != null) {
     try {
       continuationToken = JSON.parse(continuationToken);
@@ -90,7 +90,7 @@ async function getFiles (req, res) {
       sortByQuery.push(['likeCount', -1]);
       break;
     default:
-      if ((authorUsername != null && req.user && authorUsername === req.user.username) || mode === 'shared') {
+      if (mode === 'shared' || mode === 'your_files') {
         sortByQuery.push(['updatedAt', -1]);
         if (continuationToken != null) {
           findQuery.updatedAt = { $lt: continuationToken.updatedAt };
@@ -105,16 +105,8 @@ async function getFiles (req, res) {
   }
   sortByQuery.push(['_id', -1]);
 
-  // show private files only if
-  // 1. user is logged in and is author OR
-  // 2. mode is 'shared'
-  // else
-  if (!((mode === 'shared') || (req.user && authorUsername === req.user.username))) {
-    if (findQuery.publishedAt == null) {
-      findQuery.publishedAt = { $ne: null };
-    } else {
-      findQuery.publishedAt.$ne = null;
-    }
+  if (mode !== 'shared' && mode !== 'your_files') {
+    _.set(findQuery, 'publishedAt.$ne', null);
   }
 
   const files = await File

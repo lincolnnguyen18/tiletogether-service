@@ -30,10 +30,10 @@ async function isLoggedIn (req, res, next) {
     if (user) {
       req.user = user;
       next();
+      return;
     }
-  } else {
-    handleError(res, 403);
   }
+  handleError(res, 403);
 }
 
 async function identifyIfLoggedIn (req, _, next) {

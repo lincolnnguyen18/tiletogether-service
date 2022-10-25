@@ -216,7 +216,7 @@ async function setFileLike (req, res) {
   const currentlyLiked = await File.findOne({ _id: req.params.id, likes: { $elemMatch: { username: req.user.username } } }) != null;
 
   if (liked === currentlyLiked) {
-    handleError(res, 400, { liked: `File is already ${liked ? 'liked' : 'unliked'}` });
+    handleError(res, 400, `File is already ${liked ? 'liked' : 'unliked'}`);
     return;
   }
 

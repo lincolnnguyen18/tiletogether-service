@@ -29,7 +29,7 @@ layerSchema.add({ layers: [{ type: layerSchema }] });
 
 layerSchema.statics.newTestLayer = function () {
   return {
-    name: faker.random.words(_.random(1, 5)) + '_test_layer',
+    name: faker.random.words(_.random(1, 5)) + ' test_layer',
   };
 };
 
@@ -89,7 +89,7 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
   }
 
   return {
-    name: faker.random.words(_.random(1, 5)) + '_test_file',
+    name: faker.random.words(_.random(1, 5)) + ' test file',
     authorUsername,
     tileDimension,
     tags: _.sampleSize(tags, _.random(1, 4)).join(' '),
@@ -106,7 +106,7 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
 };
 
 fileSchema.statics.deleteTestFiles = async function () {
-  await this.deleteMany({ name: /_test_file/ });
+  await this.deleteMany({ name: /test file/ });
 };
 
 layerSchema.statics.deleteTestLayers = async function () {

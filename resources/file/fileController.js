@@ -131,7 +131,7 @@ async function getFileToView (req, res) {
 }
 
 async function getFileToEdit (req, res) {
-  const file = await File.findById(req.params.id).catch(() => null);
+  const file = await File.findById(req.params.id).populate('rootLayer').exec().catch(() => null);
   if (file == null) {
     handleError(res, 404);
     return;

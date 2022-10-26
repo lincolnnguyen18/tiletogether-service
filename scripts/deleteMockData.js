@@ -2,7 +2,7 @@ const { app } = require('../app');
 const mongoose = require('mongoose');
 const { setupApp, teardownApp } = require('../utils/testingUtils');
 const { User } = require('../resources/user/userSchema');
-const { File } = require('../resources/file/fileSchema');
+const { File, Layer } = require('../resources/file/fileSchema');
 const dotenv = require('dotenv');
 dotenv.config({ path: '../.env.development' });
 
@@ -12,6 +12,7 @@ async function main () {
   // Delete all test files and test users
   await File.deleteTestFiles();
   await User.deleteTestUsers();
+  await Layer.deleteTestLayers();
 
   await teardownApp(server, mongoose);
 

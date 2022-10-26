@@ -21,15 +21,16 @@ const layerSchema = Schema({
     index: { type: Number, required: true },
     tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
   }),
-  type: { type: String, required: true, enum: ['tilelayer', 'group'] },
+  pixels: [String],
+  type: { type: String, required: true, enum: ['layer', 'group'] },
   visible: { type: Boolean, default: true, required: true },
 });
 layerSchema.add({ layers: [{ type: layerSchema }] });
 
-layerSchema.methods.newRandomLayer = function () {
-  return new this({
-    name: faker.random.words(_.random(1, 5)),
-  });
+layerSchema.statics.newTestLayer = function () {
+  return {
+    name: faker.random.words(_.random(1, 5)) + '_test_layer',
+  };
 };
 
 const fileSchema = Schema({
@@ -66,6 +67,26 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
   const createdAt = faker.date.past();
   const updatedAt = faker.date.between(createdAt, new Date());
   const tileDimension = _.sample(tileDimensions);
+  const width = _.random(1, 50) * tileDimension;
+  const height = _.random(1, 50) * tileDimension;
+  const type = _.sample(['map', 'tileset']);
+  const rootLayer = await Layer.create({ name: 'test_root_layer', type: 'group' });
+
+  if (type === 'tileset') {
+    const layer1 = Layer.newTestLayer();
+
+    // fill layer1 with randomly colored hex strings in row major order
+    const layer1Pixels = [];
+    for (let i = 0; i < width / tileDimension; i++) {
+      for (let j = 0; j < height / tileDimension; j++) {
+        layer1Pixels.push(faker.internet.color());
+      }
+    }
+    layer1.pixels = layer1Pixels;
+    layer1.type = 'layer';
+    rootLayer.layers.push(layer1);
+    await rootLayer.save();
+  }
 
   return {
     name: faker.random.words(_.random(1, 5)) + '_test_file',
@@ -74,11 +95,11 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
     tags: _.sampleSize(tags, _.random(1, 4)).join(' '),
     createdAt,
     updatedAt,
-    rootLayer: (await Layer.create({ name: faker.random.words(_.random(1, 5)), type: 'group' }))._id,
-    type: _.sample(['map', 'tileset']),
+    rootLayer: rootLayer._id,
+    type,
     publishedAt: _.sample([null, faker.date.between(createdAt, updatedAt)]),
-    width: _.random(1, 50) * tileDimension,
-    height: _.random(1, 50) * tileDimension,
+    width,
+    height,
     likeCount: _.random(0, 100),
     commentCount: _.random(0, 100),
   };
@@ -86,6 +107,10 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
 
 fileSchema.statics.deleteTestFiles = async function () {
   await this.deleteMany({ name: /_test_file/ });
+};
+
+layerSchema.statics.deleteTestLayers = async function () {
+  await this.deleteMany({ name: /test_root_layer/ });
 };
 
 const Layer = mongoose.model('Layer', layerSchema);

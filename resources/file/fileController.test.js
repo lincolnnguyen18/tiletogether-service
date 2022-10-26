@@ -17,6 +17,7 @@ describe('Connect to MongoDB', () => {
     server = await setupApp(app, mongoose);
     await File.deleteTestFiles();
     await User.deleteTestUsers();
+    await Layer.deleteTestLayers();
 
     user = await User.create(User.newTestUser());
     apiClientConfig = {
@@ -30,6 +31,7 @@ describe('Connect to MongoDB', () => {
   afterAll(async () => {
     await File.deleteTestFiles();
     await User.deleteTestUsers();
+    await Layer.deleteTestLayers();
     await teardownApp(server, mongoose);
   });
 
@@ -211,12 +213,19 @@ describe('Connect to MongoDB', () => {
         };
       });
 
-      // db.files.find({ _id: ObjectId("63569bd9638fc94060324fdf"), $or: [ { authorUsername: 'car_test_user' }, { sharedWith: { $elemMatch: { $eq: 'car_test_user' } } } ] }).count() === 1
-
       test('status 200', async () => {
+        // db.files.find({ _id: ObjectId("63569bd9638fc94060324fdf"), $or: [ { authorUsername: 'car_test_user' }, { sharedWith: { $elemMatch: { $eq: 'car_test_user' } } } ] }).count() === 1
         const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig);
+        const file = res.data.file;
 
-        const fileFields = Object.keys(res.data.file);
+        // this is testing to see if mongoose's populate() is working
+        if (file.type === 'tileset') {
+          // expect file.rootLayer.layers[0].pixels to be an array of length greater than one
+          expect(file.rootLayer.layers[0].pixels.length).toBeGreaterThan(1);
+        }
+        // TODO: fill map with random tiles from random tilesets and test populate() on map.rootLayer.layers[0].tiles
+
+        const fileFields = Object.keys(file);
         const difference = _.difference(editFileFields, fileFields);
         expect(difference).toEqual([]);
       });

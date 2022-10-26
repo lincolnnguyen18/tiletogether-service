@@ -70,8 +70,8 @@ UserSchema.statics.newTestUser = function () {
   username = username.slice(0, 20 - suffix.length);
   username += suffix;
 
-  // remove all non-lowercase alphanumeric characters
-  username = username.replace(/[^a-z0-9]/g, '');
+  // remove all non-lowercase non-underscore alphanumeric characters
+  username = username.replace(/[^a-z0-9_]/g, '');
 
   return {
     username,
@@ -81,7 +81,8 @@ UserSchema.statics.newTestUser = function () {
 };
 
 UserSchema.statics.deleteTestUsers = async function () {
-  return this.deleteMany({ username: { $regex: '_test_user' } });
+  // delete all users with username ending in _test_user or username == test
+  return this.deleteMany({ username: { $in: ['test', /_test_user$/] } });
 };
 
 const User = mongoose.model('User', UserSchema);

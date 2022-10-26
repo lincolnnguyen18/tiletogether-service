@@ -2,9 +2,10 @@ const { Schema } = require('mongoose');
 const { faker } = require('@faker-js/faker');
 const _ = require('lodash');
 const mongoose = require('mongoose');
+const { createRandomTree } = require('../../utils/treeUtils');
 
 const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals', 'plants', 'food', 'weapons', 'misc'];
-const tileDimensions = [16, 32, 64, 128, 256];
+const tileDimensions = [4, 8, 16, 32, 64];
 
 const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width'];
 const viewFileFields = ['id', 'authorUsername', 'comments', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes'];
@@ -21,15 +22,16 @@ const layerSchema = Schema({
     index: { type: Number, required: true },
     tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
   }),
-  type: { type: String, required: true, enum: ['tilelayer', 'group'] },
+  tilesetLayerUrl: { type: String },
+  type: { type: String, required: true, enum: ['layer', 'group'] },
   visible: { type: Boolean, default: true, required: true },
 });
 layerSchema.add({ layers: [{ type: layerSchema }] });
 
-layerSchema.methods.newRandomLayer = function () {
-  return new this({
-    name: faker.random.words(_.random(1, 5)),
-  });
+layerSchema.statics.newTestLayer = function () {
+  return {
+    name: faker.random.words(_.random(1, 5)) + ' test_layer',
+  };
 };
 
 const fileSchema = Schema({
@@ -66,26 +68,37 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
   const createdAt = faker.date.past();
   const updatedAt = faker.date.between(createdAt, new Date());
   const tileDimension = _.sample(tileDimensions);
+  const width = _.random(1, 10);
+  const height = _.random(1, 10);
+  const type = _.sample(['map', 'tileset']);
+  const rootLayer = await Layer.create({ name: 'test_root_layer', type: 'group' });
+
+  rootLayer.layers = createRandomTree(3);
+  await rootLayer.save();
 
   return {
-    name: faker.random.words(_.random(1, 5)) + '_test_file',
+    name: faker.random.words(_.random(1, 5)) + ' test file',
     authorUsername,
     tileDimension,
     tags: _.sampleSize(tags, _.random(1, 4)).join(' '),
     createdAt,
     updatedAt,
-    rootLayer: (await Layer.create({ name: faker.random.words(_.random(1, 5)), type: 'group' }))._id,
-    type: _.sample(['map', 'tileset']),
+    rootLayer: rootLayer._id,
+    type,
     publishedAt: _.sample([null, faker.date.between(createdAt, updatedAt)]),
-    width: _.random(1, 50) * tileDimension,
-    height: _.random(1, 50) * tileDimension,
+    width,
+    height,
     likeCount: _.random(0, 100),
     commentCount: _.random(0, 100),
   };
 };
 
 fileSchema.statics.deleteTestFiles = async function () {
-  await this.deleteMany({ name: /_test_file/ });
+  await this.deleteMany({ name: /test file/ });
+};
+
+layerSchema.statics.deleteTestLayers = async function () {
+  await this.deleteMany({ name: /test_root_layer/ });
 };
 
 const Layer = mongoose.model('Layer', layerSchema);

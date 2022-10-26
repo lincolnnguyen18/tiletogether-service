@@ -219,11 +219,7 @@ describe('Connect to MongoDB', () => {
         const file = res.data.file;
 
         // this is testing to see if mongoose's populate() is working
-        if (file.type === 'tileset') {
-          // expect file.rootLayer.layers[0].pixels to be an array of length greater than one
-          expect(file.rootLayer.layers[0].pixels.length).toBeGreaterThan(1);
-        }
-        // TODO: fill map with random tiles from random tilesets and test populate() on map.rootLayer.layers[0].tiles
+        expect(file.rootLayer.layers.length).toBeGreaterThan(1);
 
         const fileFields = Object.keys(file);
         const difference = _.difference(editFileFields, fileFields);

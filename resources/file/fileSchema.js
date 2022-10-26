@@ -2,9 +2,10 @@ const { Schema } = require('mongoose');
 const { faker } = require('@faker-js/faker');
 const _ = require('lodash');
 const mongoose = require('mongoose');
+const { createRandomTree } = require('../../utils/treeUtils');
 
 const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals', 'plants', 'food', 'weapons', 'misc'];
-const tileDimensions = [16, 32, 64, 128, 256];
+const tileDimensions = [4, 8, 16, 32, 64];
 
 const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width'];
 const viewFileFields = ['id', 'authorUsername', 'comments', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes'];
@@ -21,7 +22,7 @@ const layerSchema = Schema({
     index: { type: Number, required: true },
     tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
   }),
-  pixels: [String],
+  tilesetLayerUrl: { type: String },
   type: { type: String, required: true, enum: ['layer', 'group'] },
   visible: { type: Boolean, default: true, required: true },
 });
@@ -67,26 +68,13 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
   const createdAt = faker.date.past();
   const updatedAt = faker.date.between(createdAt, new Date());
   const tileDimension = _.sample(tileDimensions);
-  const width = _.random(1, 50) * tileDimension;
-  const height = _.random(1, 50) * tileDimension;
+  const width = _.random(1, 10);
+  const height = _.random(1, 10);
   const type = _.sample(['map', 'tileset']);
   const rootLayer = await Layer.create({ name: 'test_root_layer', type: 'group' });
 
-  if (type === 'tileset') {
-    const layer1 = Layer.newTestLayer();
-
-    // fill layer1 with randomly colored hex strings in row major order
-    const layer1Pixels = [];
-    for (let i = 0; i < width / tileDimension; i++) {
-      for (let j = 0; j < height / tileDimension; j++) {
-        layer1Pixels.push(faker.internet.color());
-      }
-    }
-    layer1.pixels = layer1Pixels;
-    layer1.type = 'layer';
-    rootLayer.layers.push(layer1);
-    await rootLayer.save();
-  }
+  rootLayer.layers = createRandomTree(3);
+  await rootLayer.save();
 
   return {
     name: faker.random.words(_.random(1, 5)) + ' test file',

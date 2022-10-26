@@ -154,3 +154,8 @@ To build and run your Dockerfile, run
 
 To remove the Docker container forcefully, run
 * `docker rm -f tiletogether-service-container` to remove the container
+
+## Documents
+| ![BE_MODEL.png](docs/BE_MODEL.png) |
+|:--:|
+| <b>Back End UML Model</b>|

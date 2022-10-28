@@ -67,7 +67,7 @@ const fileSchema = Schema({
 
 fileSchema.index({ authorUsername: 'text', name: 'text', tags: 'text' });
 
-fileSchema.statics.newTestFile = async function (authorUsername) {
+fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
   const createdAt = faker.date.past();
   const updatedAt = faker.date.between(createdAt, new Date());
   const tileDimension = _.sample(tileDimensions);
@@ -79,8 +79,8 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
   rootLayer.layers = createRandomTree(3);
   await rootLayer.save();
 
-  const likeCount = _.random(0, 100);
-  const commentCount = _.random(0, 20);
+  const likeCount = users && users.length > 0 ? _.random(0, 100) : 0;
+  const commentCount = users && users.length > 0 ? _.random(0, 20) : 0;
 
   return {
     name: faker.random.words(_.random(1, 5)) + ' test file',
@@ -96,9 +96,9 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
     type,
     publishedAt: _.sample([null, faker.date.between(createdAt, updatedAt)]),
     views: _.random(0, 100),
-    likes: newTestLikes(likeCount, authorUsername),
+    likes: newTestLikes(likeCount, users),
     likeCount,
-    comments: newTestComments(commentCount, authorUsername),
+    comments: newTestComments(commentCount, users),
     commentCount,
   };
 };
@@ -111,11 +111,11 @@ layerSchema.statics.deleteTestLayers = async function () {
   await this.deleteMany({ name: /test_root_layer/ });
 };
 
-const newTestComments = function (count, username) {
+const newTestComments = function (count, users) {
   const comments = [];
   for (let i = 0; i < count; i++) {
     comments.push({
-      username,
+      username: _.sample(users).username,
       content: faker.random.words(_.random(50, 100)),
       createdAt: faker.date.past(),
     });
@@ -123,11 +123,13 @@ const newTestComments = function (count, username) {
   return comments;
 };
 
-const newTestLikes = function (count, username) {
+const newTestLikes = function (count, users) {
   const likes = [];
+  let randomUser;
   for (let i = 0; i < count; i++) {
+    randomUser = _.sample(users);
     likes.push({
-      username,
+      username: randomUser.username,
       createdAt: faker.date.past(),
     });
   }

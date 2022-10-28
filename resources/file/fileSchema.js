@@ -39,7 +39,7 @@ const fileSchema = Schema({
   authorUsername: { type: String, required: true, index: true },
   name: { type: String, required: [true, 'Name is required'] },
   type: { type: String, required: true, enum: ['map', 'tileset'], index: true },
-  description: { type: String, required: true },
+  description: { type: String },
   tileDimension: { type: Number, required: [true, 'Tile dimension is required'], index: true },
   width: { type: Number, min: 1, required: [true, 'Width is required'] },
   height: { type: Number, min: 1, required: [true, 'Height is required'] },
@@ -79,8 +79,8 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
   rootLayer.layers = createRandomTree(3);
   await rootLayer.save();
 
-  const likeCnt = _.random(0, 100);
-  const comCnt = _.random(0, 20);
+  const likeCount = _.random(0, 100);
+  const commentCount = _.random(0, 20);
 
   return {
     name: faker.random.words(_.random(1, 5)) + ' test file',
@@ -96,10 +96,10 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
     type,
     publishedAt: _.sample([null, faker.date.between(createdAt, updatedAt)]),
     views: _.random(0, 100),
-    likes: newTestLikes(likeCnt),
-    likeCount: likeCnt,
-    comments: newTestComments(comCnt),
-    commentCount: comCnt,
+    likes: newTestLikes(likeCount, authorUsername),
+    likeCount,
+    comments: newTestComments(commentCount, authorUsername),
+    commentCount,
   };
 };
 
@@ -111,11 +111,11 @@ layerSchema.statics.deleteTestLayers = async function () {
   await this.deleteMany({ name: /test_root_layer/ });
 };
 
-const newTestComments = function (count) {
+const newTestComments = function (count, username) {
   const comments = [];
   for (let i = 0; i < count; i++) {
     comments.push({
-      username: faker.random.words(_.random(1, 5)),
+      username,
       content: faker.random.words(_.random(50, 100)),
       createdAt: faker.date.past(),
     });
@@ -123,11 +123,11 @@ const newTestComments = function (count) {
   return comments;
 };
 
-const newTestLikes = function (count) {
+const newTestLikes = function (count, username) {
   const likes = [];
   for (let i = 0; i < count; i++) {
     likes.push({
-      username: faker.random.words(_.random(1, 5)),
+      username,
       createdAt: faker.date.past(),
     });
   }

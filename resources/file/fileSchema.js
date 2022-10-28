@@ -8,7 +8,7 @@ const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals'
 const tileDimensions = [4, 8, 16, 32, 64];
 
 const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width'];
-const viewFileFields = ['id', 'authorUsername', 'comments', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes'];
+const viewFileFields = ['id', 'authorUsername', 'comments', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'description', 'views'];
 
 const layerSchema = Schema({
   name: { type: String, required: true },
@@ -36,6 +36,20 @@ layerSchema.statics.newTestLayer = function () {
 
 const fileSchema = Schema({
   authorUsername: { type: String, required: true, index: true },
+  name: { type: String, required: [true, 'Name is required'] },
+  type: { type: String, required: true, enum: ['map', 'tileset'], index: true },
+  description: { type: String, required: true },
+  tileDimension: { type: Number, required: [true, 'Tile dimension is required'], index: true },
+  width: { type: Number, min: 1, required: [true, 'Width is required'] },
+  height: { type: Number, min: 1, required: [true, 'Height is required'] },
+  rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
+  tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
+  imageUrl: String,
+  views: { type: Number, min: 0, required: true, default: 0 },
+  tags: { type: String, required: true, index: true },
+  publishedAt: { type: Date, sparse: true },
+  createdAt: { type: Date, default: Date.now, required: true },
+  updatedAt: { type: Date, default: Date.now, required: true },
   comments: [new Schema({
     username: { type: String, required: true, index: true },
     content: { type: String, required: true },
@@ -47,19 +61,7 @@ const fileSchema = Schema({
     createdAt: { type: Date, required: true, default: Date.now },
   })],
   likeCount: { type: Number, min: 0, required: true, default: 0 },
-  createdAt: { type: Date, default: Date.now, required: true },
-  height: { type: Number, min: 1, required: [true, 'Height is required'] },
-  imageUrl: String,
-  name: { type: String, required: [true, 'Name is required'] },
-  rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
   sharedWith: [String],
-  tags: { type: String, required: true, index: true },
-  tileDimension: { type: Number, required: [true, 'Tile dimension is required'], index: true },
-  tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
-  type: { type: String, required: true, enum: ['map', 'tileset'], index: true },
-  updatedAt: { type: Date, default: Date.now, required: true },
-  publishedAt: { type: Date, sparse: true },
-  width: { type: Number, min: 1, required: [true, 'Width is required'] },
 });
 
 fileSchema.index({ authorUsername: 'text', name: 'text', tags: 'text' });
@@ -80,14 +82,14 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
     name: faker.random.words(_.random(1, 5)) + ' test file',
     authorUsername,
     tileDimension,
+    width,
+    height,
     tags: _.sampleSize(tags, _.random(1, 4)).join(' '),
     createdAt,
     updatedAt,
     rootLayer: rootLayer._id,
     type,
     publishedAt: _.sample([null, faker.date.between(createdAt, updatedAt)]),
-    width,
-    height,
     likeCount: _.random(0, 100),
     commentCount: _.random(0, 100),
   };

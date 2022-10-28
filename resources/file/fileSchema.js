@@ -85,6 +85,7 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
   return {
     name: faker.random.words(_.random(1, 5)) + ' test file',
     authorUsername,
+    description: faker.random.words(_.random(150, 200)),
     tileDimension,
     width,
     height,

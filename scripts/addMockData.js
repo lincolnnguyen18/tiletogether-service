@@ -45,7 +45,7 @@ async function main () {
   testRootLayer.layers = [testLayer1];
   testRootLayer = await Layer.create(testRootLayer);
 
-  const testFile = await File.newTestFile(testUser.username);
+  const testFile = await File.newTestFile(testUser.username, users);
   testFile.name = 'Rabbit world test file';
   testFile.rootLayer = testRootLayer._id;
   testFile.tileDimension = 16;

@@ -25,8 +25,6 @@ FileRouter.delete('/:id', isLoggedIn, deleteFile);
 FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 // add comment to a file
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
-// get file recommendations
-FileRouter.get('/:id/recommend', getRecommendations);
 
 async function getFiles (req, res) {
   // query = { keywords, tile_dimension, type, sort_by, mode, limit, authorUsername }
@@ -254,28 +252,6 @@ async function addCommentToFile (req, res) {
   }
 
   res.json({ message: 'Comment added successfully' });
-}
-
-async function getRecommendations (req, res) {
-  const { limit } = req.query;
-
-  const file = await File.findById(req.params.id).catch(() => null);
-  if (file == null) {
-    handleError(res, 404);
-    return;
-  }
-
-  const findQuery = {};
-
-  findQuery.$text = { $search: file.tags };
-
-  const files = await File
-    .find(findQuery)
-    .limit(limit ?? 10)
-    .select(viewFileFields.join(' '))
-    .catch(() => []);
-
-  res.json({ files });
 }
 
 module.exports = { FileRouter };

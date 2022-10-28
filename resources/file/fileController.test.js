@@ -2,7 +2,7 @@ const { setupApp, teardownApp, apiClient } = require('../../utils/testingUtils')
 const { app } = require('../../app');
 const mongoose = require('mongoose');
 const { User } = require('../user/userSchema');
-const { File, editFileFields, viewFileFields, Layer, tags } = require('./fileSchema');
+const { File, editFileFields, viewFileFields, Layer, tags, viewFileFieldsFull } = require('./fileSchema');
 const _ = require('lodash');
 
 let server;
@@ -217,7 +217,7 @@ describe('Connect to MongoDB', () => {
         const res = await apiClient.get(`/api/files/${validFileId}`, apiClientConfig);
 
         const fileFields = Object.keys(res.data.file);
-        const difference = _.difference(viewFileFields, fileFields);
+        const difference = _.difference(viewFileFieldsFull, fileFields);
         expect(difference).toEqual([]);
       });
 
@@ -308,7 +308,7 @@ describe('Connect to MongoDB', () => {
 
         for (let i = 0; i < numFiles; i++) {
           const randomUser = _.sample(users);
-          const file = await File.newTestFile(randomUser.username);
+          const file = await File.newTestFile(randomUser.username, users);
           files.push(file);
         }
         files.sort((a, b) => a.createdAt - b.createdAt);

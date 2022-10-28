@@ -33,7 +33,7 @@ async function main () {
   // Create files
   for (let i = 0; i < numFiles; i++) {
     const randomUser = _.sample(users);
-    const file = await File.newTestFile(randomUser.username);
+    const file = await File.newTestFile(randomUser.username, users);
     const fileInstance = await File.create(file);
     files.push(fileInstance);
   }

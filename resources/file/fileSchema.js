@@ -8,7 +8,8 @@ const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals'
 const tileDimensions = [4, 8, 16, 32, 64];
 
 const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width'];
-const viewFileFields = ['id', 'authorUsername', 'comments', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'description', 'views'];
+const viewFileFields = ['id', 'authorUsername', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'views'];
+const viewFileFieldsFull = ['id', 'authorUsername', 'likes', 'likeCount', 'comments', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'description', 'views'];
 
 const layerSchema = Schema({
   name: { type: String, required: true },
@@ -78,6 +79,9 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
   rootLayer.layers = createRandomTree(3);
   await rootLayer.save();
 
+  const likeCnt = _.random(0, 100);
+  const comCnt = _.random(0, 20);
+
   return {
     name: faker.random.words(_.random(1, 5)) + ' test file',
     authorUsername,
@@ -90,8 +94,11 @@ fileSchema.statics.newTestFile = async function (authorUsername) {
     rootLayer: rootLayer._id,
     type,
     publishedAt: _.sample([null, faker.date.between(createdAt, updatedAt)]),
-    likeCount: _.random(0, 100),
-    commentCount: _.random(0, 100),
+    views: _.random(0, 100),
+    likes: newTestLikes(likeCnt),
+    likeCount: likeCnt,
+    comments: newTestComments(comCnt),
+    commentCount: comCnt,
   };
 };
 
@@ -103,7 +110,30 @@ layerSchema.statics.deleteTestLayers = async function () {
   await this.deleteMany({ name: /test_root_layer/ });
 };
 
+const newTestComments = function (count) {
+  const comments = [];
+  for (let i = 0; i < count; i++) {
+    comments.push({
+      username: faker.random.words(_.random(1, 5)),
+      content: faker.random.words(_.random(50, 100)),
+      createdAt: faker.date.past(),
+    });
+  }
+  return comments;
+};
+
+const newTestLikes = function (count) {
+  const likes = [];
+  for (let i = 0; i < count; i++) {
+    likes.push({
+      username: faker.random.words(_.random(1, 5)),
+      createdAt: faker.date.past(),
+    });
+  }
+  return likes;
+};
+
 const Layer = mongoose.model('Layer', layerSchema);
 const File = mongoose.model('File', fileSchema);
 
-module.exports = { File, Layer, editFileFields, viewFileFields, tags };
+module.exports = { File, Layer, editFileFields, viewFileFields, viewFileFieldsFull, tags };

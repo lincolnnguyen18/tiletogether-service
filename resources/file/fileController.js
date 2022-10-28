@@ -1,6 +1,6 @@
 const express = require('express');
 const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
-const { File } = require('./fileSchema.js');
+const { File, viewFileFieldsFull } = require('./fileSchema.js');
 const { handleError, mapErrors } = require('../../utils/errorUtils');
 const _ = require('lodash');
 const { mapKeysToCamelCase } = require('../../utils/stringUtils');
@@ -126,7 +126,7 @@ async function getFileToView (req, res) {
     return;
   }
 
-  const pickedFile = _.pick(file, viewFileFields);
+  const pickedFile = _.pick(file, viewFileFieldsFull);
   res.json({ file: pickedFile });
 }
 

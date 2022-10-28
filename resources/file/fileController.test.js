@@ -2,7 +2,7 @@ const { setupApp, teardownApp, apiClient } = require('../../utils/testingUtils')
 const { app } = require('../../app');
 const mongoose = require('mongoose');
 const { User } = require('../user/userSchema');
-const { File, editFileFields, viewFileFields, Layer, tags } = require('./fileSchema');
+const { File, editFileFields, viewFileFields, Layer, tags, viewFileFieldsFull } = require('./fileSchema');
 const _ = require('lodash');
 
 let server;
@@ -33,6 +33,40 @@ describe('Connect to MongoDB', () => {
     await User.deleteTestUsers();
     await Layer.deleteTestLayers();
     await teardownApp(server, mongoose);
+  });
+
+  // No schema is created in db
+  describe('File Generation Test', () => {
+    const users = [];
+    let file;
+
+    beforeAll(async () => {
+      users.push(User.newTestUser());
+      users.push(User.newTestUser());
+      users.push(User.newTestUser());
+    });
+
+    test('File without likes & comments', async () => {
+      file = await File.newTestFile(user.username);
+      expect(file.likeCount).toBe(0);
+      expect(file.likes.length).toBe(0);
+      expect(file.commentCount).toBe(0);
+      expect(file.comments.length).toBe(0);
+    });
+
+    test('File with likes & comments posted by other users', async () => {
+      file = await File.newTestFile(user.username, users);
+      expect(file.likeCount).toBe(file.likes.length);
+      expect(file.commentCount).toBe(file.comments.length);
+
+      file.likes.forEach(l => {
+        expect(users.some(u => u.username === l.username)).toBe(true);
+      });
+
+      file.comments.forEach(c => {
+        expect(users.some(u => u.username === c.username)).toBe(true);
+      });
+    });
   });
 
   describe('File API lets user', () => {
@@ -183,7 +217,7 @@ describe('Connect to MongoDB', () => {
         const res = await apiClient.get(`/api/files/${validFileId}`, apiClientConfig);
 
         const fileFields = Object.keys(res.data.file);
-        const difference = _.difference(viewFileFields, fileFields);
+        const difference = _.difference(viewFileFieldsFull, fileFields);
         expect(difference).toEqual([]);
       });
 
@@ -274,7 +308,7 @@ describe('Connect to MongoDB', () => {
 
         for (let i = 0; i < numFiles; i++) {
           const randomUser = _.sample(users);
-          const file = await File.newTestFile(randomUser.username);
+          const file = await File.newTestFile(randomUser.username, users);
           files.push(file);
         }
         files.sort((a, b) => a.createdAt - b.createdAt);

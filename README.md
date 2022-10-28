@@ -9,8 +9,8 @@
 6. Run `npm run start` in the root directory
 7. Go to `localhost:3001/api/health` and you should see `OK`
 8. Run `npm run test` to run tests
-9. Run `node utils/addMockData.js` to add mock data to the database
-10. Go to `node utils/deleteMockData.js` to delete all mock data from the database (users with usernames ending with '_test_user' and files with nanes ending with '_test_file')
+9. Run `node scripts/addMockData.js` to add mock data to the database
+10. Go to `node scripts/deleteMockData.js` to delete all mock data from the database (users with usernames ending with '_test_user' and files with nanes ending with '_test_file')
 
 ## Reviewing a PR
 
@@ -144,13 +144,20 @@ Clean up locally by running
 
 ## Other notes
 * You can view the progress and results of GitHub testing and deployment actions at https://github.com/team-orange-cse416/tiletogether-service/actions
-* The TileTogether service (API) is deployed at http://tilet-tilet-u37bwe5numj2-941740168.us-east-1.elb.amazonaws.com 
+* The TileTogether service (API) is deployed at http://tilet-tilet-u37bwe5numj2-941740168.us-east-1.elb.amazonaws.com
+* To run a single jest test, run `npm run test -- -t "<test name>"` where `<test name>` is the name of the test you want to run, e.g. `npm run test -- -t "status 200 for keywords = random tag and random user, sorted by likes"`
 
 ## Building and running Docker container
 
 To build and run your Dockerfile, run
 * `docker build -t tiletogether-service .` to build the Docker image
 * `docker run -dp 8080:80 --name tiletogether-service-container tiletogether-service` to connect to the server that is running on port 80 in the container from port 3000 on your machine
+* To run all jest tests multiple times (on Unix shells) run `for i in {1..10}; do npm test; done`
 
 To remove the Docker container forcefully, run
 * `docker rm -f tiletogether-service-container` to remove the container
+
+## Documents
+| ![BE_MODEL.png](docs/BE_MODEL.png) |
+|:--:|
+| <b>Back End UML Model</b>|

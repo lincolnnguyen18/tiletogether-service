@@ -33,7 +33,7 @@ async function main () {
   // Create files
   for (let i = 0; i < numFiles; i++) {
     const randomUser = _.sample(users);
-    const file = await File.newTestFile(randomUser.username);
+    const file = await File.newTestFile(randomUser.username, users);
     const fileInstance = await File.create(file);
     files.push(fileInstance);
   }
@@ -45,7 +45,7 @@ async function main () {
   testRootLayer.layers = [testLayer1];
   testRootLayer = await Layer.create(testRootLayer);
 
-  const testFile = await File.newTestFile(testUser.username);
+  const testFile = await File.newTestFile(testUser.username, users);
   testFile.name = 'Rabbit world test file';
   testFile.rootLayer = testRootLayer._id;
   testFile.tileDimension = 16;

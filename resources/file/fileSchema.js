@@ -79,8 +79,20 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
   rootLayer.layers = createRandomTree(3);
   await rootLayer.save();
 
-  const likeCount = users && users.length > 0 ? _.random(0, 100) : 0;
-  const commentCount = users && users.length > 0 ? _.random(0, 20) : 0;
+  const likes = _
+    .sampleSize(users, _.random(0, users.length))
+    .map((user) => ({
+      username: user.username,
+      createdAt: faker.date.between(createdAt, updatedAt),
+    }));
+
+  const comments = _
+    .sampleSize(users, _.random(0, users.length))
+    .map((user) => ({
+      username: user.username,
+      content: faker.random.words(_.random(50, 100)),
+      createdAt: faker.date.between(createdAt, updatedAt),
+    }));
 
   return {
     name: faker.random.words(_.random(1, 5)) + ' test file',
@@ -96,10 +108,10 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
     type,
     publishedAt: _.sample([null, faker.date.between(createdAt, updatedAt)]),
     views: _.random(0, 100),
-    likes: newTestLikes(likeCount, users),
-    likeCount,
-    comments: newTestComments(commentCount, users),
-    commentCount,
+    likes,
+    likeCount: likes.length,
+    comments,
+    commentCount: comments.length,
   };
 };
 
@@ -110,32 +122,6 @@ fileSchema.statics.deleteTestFiles = async function () {
 layerSchema.statics.deleteTestLayers = async function () {
   await this.deleteMany({ name: /test_root_layer/ });
 };
-
-const newTestComments = function (count, users) {
-  const comments = [];
-  for (let i = 0; i < count; i++) {
-    comments.push({
-      username: _.sample(users).username,
-      content: faker.random.words(_.random(50, 100)),
-      createdAt: faker.date.past(),
-    });
-  }
-  return comments;
-};
-
-const newTestLikes = function (count, users) {
-  const likes = [];
-  let randomUser;
-  for (let i = 0; i < count; i++) {
-    randomUser = _.sample(users);
-    likes.push({
-      username: randomUser.username,
-      createdAt: faker.date.past(),
-    });
-  }
-  return likes;
-};
-
 const Layer = mongoose.model('Layer', layerSchema);
 const File = mongoose.model('File', fileSchema);
 

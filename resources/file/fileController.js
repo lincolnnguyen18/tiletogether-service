@@ -25,6 +25,8 @@ FileRouter.delete('/:id', isLoggedIn, deleteFile);
 FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 // add comment to a file
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
+// get file recommendations
+FileRouter.get('/:id/recommend', identifyIfLoggedIn, getRecommendations);
 
 async function getFiles (req, res) {
   // query = { keywords, tile_dimension, type, sort_by, mode, limit, authorUsername }
@@ -252,6 +254,47 @@ async function addCommentToFile (req, res) {
   }
 
   res.json({ message: 'Comment added successfully' });
+}
+
+async function getRecommendations (req, res) {
+  let { limit, continuationToken } = req.query;
+
+  const file = await File.findById(req.params.id).catch(() => null);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
+
+  if (continuationToken != null) {
+    try {
+      continuationToken = JSON.parse(continuationToken);
+    } catch (err) {
+      handleError(res, 400);
+      return;
+    }
+  }
+
+  const findQuery = {};
+  const sortByQuery = [];
+
+  findQuery.publishedAt = { $ne: null };
+  findQuery._id = { $ne: req.params.id };
+
+  if (continuationToken != null) {
+    findQuery.publishedAt = { $lt: continuationToken.publishedAt };
+  }
+
+  sortByQuery.push(['publishedAt', -1]);
+  sortByQuery.push(['_id', -1]);
+
+  const files = await File
+    .find(findQuery)
+    .sort(sortByQuery)
+    .limit(limit ?? 10)
+    .select(viewFileFields.join(' '))
+    .catch(() => []);
+
+  res.json({ files });
 }
 
 module.exports = { FileRouter };

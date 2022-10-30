@@ -496,5 +496,57 @@ describe('Connect to MongoDB', () => {
         } while (true);
       });
     });
+
+    describe('get recommendation files', () => {
+      const numUsers = 5;
+      const numFiles = 50;
+
+      const users = [];
+      let files = [];
+
+      const defaultPageLimit = 10;
+
+      beforeAll(async () => {
+        await User.deleteMany({});
+        await File.deleteMany({});
+        await Layer.deleteMany({});
+
+        for (let i = 0; i < numUsers; i++) {
+          const user = await User.create(User.newTestUser());
+          users.push(user);
+        }
+
+        for (let i = 0; i < numFiles; i++) {
+          const randomUser = _.sample(users);
+          const file = await File.newTestFile(randomUser.username, users);
+          files.push(file);
+        }
+        files.sort((a, b) => a.createdAt - b.createdAt);
+
+        const newFiles = [];
+        for (let i = 0; i < numFiles; i++) {
+          const file = await File.create(files[i]);
+          newFiles.push(file);
+        }
+        files = newFiles;
+      });
+
+      beforeEach(async () => {
+        apiClientConfig.params = {};
+      });
+
+      test('status 200 for getting recommendation files', async () => {
+        const randomFile = _.sample(files);
+        apiClientConfig.params.continuationToken = null;
+        const res = await apiClient.get(`/api/files/${randomFile._id}/recommend`, apiClientConfig);
+        const page = res.data.files;
+        expect(res.status).toBe(200);
+        const expectedPage = await File
+          .find({ publishedAt: { $ne: null }, _id: { $ne: randomFile.id } })
+          .sort({ publishedAt: -1, _id: -1 })
+          .limit(defaultPageLimit);
+        expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
+      });
+    });
   });
 });

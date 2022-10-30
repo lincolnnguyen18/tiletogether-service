@@ -3,7 +3,6 @@ const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
 const { File, viewFileFieldsFull } = require('./fileSchema.js');
 const { handleError, mapErrors } = require('../../utils/errorUtils');
 const _ = require('lodash');
-const { mapKeysToCamelCase } = require('../../utils/stringUtils');
 const { editFileFields, viewFileFields } = require('./fileSchema');
 
 const FileRouter = express.Router();
@@ -30,7 +29,6 @@ FileRouter.get('/:id/recommend', identifyIfLoggedIn, getRecommendations);
 
 async function getFiles (req, res) {
   // query = { keywords, tile_dimension, type, sort_by, mode, limit, authorUsername }
-  req.query = mapKeysToCamelCase(req.query);
   let { keywords, continuationToken, limit, sortBy, mode } = req.query;
   if (continuationToken != null) {
     try {
@@ -286,6 +284,8 @@ async function getRecommendations (req, res) {
 
   sortByQuery.push(['publishedAt', -1]);
   sortByQuery.push(['_id', -1]);
+
+  const viewFileFields = ['name', 'updatedAt', 'publishedAt'];
 
   const files = await File
     .find(findQuery)

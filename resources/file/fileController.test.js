@@ -327,13 +327,12 @@ describe('Connect to MongoDB', () => {
 
       test('status 200 for getting files of type tileset', async () => {
         // db.files.find({publishedAt: {$ne: null}, type: "tileset"}).sort({publishedAt: -1, _id: -1}).skip(0).limit(10)
-        let continuationToken = null;
         let pageCount = 0;
         let page = [];
         apiClientConfig.params.type = 'tileset';
 
         do {
-          apiClientConfig.params.continuation_token = continuationToken;
+          apiClientConfig.params.page = pageCount + 1;
           const res = await apiClient.get('/api/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
@@ -343,14 +342,12 @@ describe('Connect to MongoDB', () => {
             .limit(defaultPageLimit);
           expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
           if (page.length !== defaultPageLimit) break;
-          continuationToken = page[page.length - 1];
           pageCount++;
         } while (true);
       });
 
       test('status 200 for keywords = random tag and random user, sorted by likes', async () => {
         // db.files.find({publishedAt: {$ne: null}, $text: {$search: 'buildings male_test_user'}}).sort({likeCount: -1, _id: -1}).skip(0).limit(10)
-        let continuationToken = null;
         let pageCount = 0;
         let page = [];
         const randomTag = _.sample(tags);
@@ -360,7 +357,7 @@ describe('Connect to MongoDB', () => {
         apiClientConfig.params.sort_by = 'likes';
 
         do {
-          apiClientConfig.params.continuation_token = continuationToken;
+          apiClientConfig.params.page = pageCount + 1;
           const res = await apiClient.get('/api/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
@@ -370,21 +367,19 @@ describe('Connect to MongoDB', () => {
             .limit(defaultPageLimit);
           expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
           if (page.length !== defaultPageLimit) break;
-          continuationToken = page[page.length - 1];
           pageCount++;
         } while (true);
       });
 
       test('status 200 for another user\'s files', async () => {
         // db.files.find({publishedAt: {$ne: null}, authorUsername: "testuser2"}).sort({publishedAt: -1, _id: -1}).skip(0).limit(10)
-        let continuationToken = null;
         let pageCount = 0;
         let page = [];
         const randomUsername = _.sample(users).username;
         apiClientConfig.params.authorUsername = randomUsername;
 
         do {
-          apiClientConfig.params.continuation_token = continuationToken;
+          apiClientConfig.params.page = pageCount + 1;
           const res = await apiClient.get('/api/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
@@ -394,7 +389,6 @@ describe('Connect to MongoDB', () => {
             .limit(defaultPageLimit);
           expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
           if (page.length !== defaultPageLimit) break;
-          continuationToken = page[page.length - 1];
           pageCount++;
         } while (true);
       });
@@ -412,7 +406,6 @@ describe('Connect to MongoDB', () => {
         }
 
         // db.files.find({publishedAt: {$ne: null}, likes: {$elemMatch: {username: "testuser2"}}}).sort({publishedAt: -1, _id: -1}).skip(0).limit(10)
-        let continuationToken = null;
         let pageCount = 0;
         let page = [];
         apiClientConfig.params.username = randomUser.username;
@@ -420,7 +413,7 @@ describe('Connect to MongoDB', () => {
         apiClientConfig.headers = { Authorization: `Bearer ${randomUser.generateAuthToken()}` };
 
         do {
-          apiClientConfig.params.continuation_token = continuationToken;
+          apiClientConfig.params.page = pageCount + 1;
           const res = await apiClient.get('/api/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
@@ -430,14 +423,12 @@ describe('Connect to MongoDB', () => {
             .limit(defaultPageLimit);
           expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
           if (page.length !== defaultPageLimit) break;
-          continuationToken = page[page.length - 1];
           pageCount++;
         } while (true);
       });
 
       test('status 200 for signed in user\'s files', async () => {
         // db.files.find({authorUsername: "bedfordshi_test_user"}).sort({updatedAt: -1, _id: -1}).skip(0).limit(10)
-        let continuationToken = null;
         let pageCount = 0;
         let page = [];
         const randomUser = _.sample(users);
@@ -445,7 +436,7 @@ describe('Connect to MongoDB', () => {
         apiClientConfig.headers = { Authorization: `Bearer ${randomUser.generateAuthToken()}` };
 
         do {
-          apiClientConfig.params.continuation_token = continuationToken;
+          apiClientConfig.params.page = pageCount + 1;
           const res = await apiClient.get('/api/files?mode=your_files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
@@ -455,7 +446,6 @@ describe('Connect to MongoDB', () => {
             .limit(defaultPageLimit);
           expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
           if (page.length !== defaultPageLimit) break;
-          continuationToken = page[page.length - 1];
           pageCount++;
         } while (true);
       });
@@ -473,7 +463,6 @@ describe('Connect to MongoDB', () => {
         }
 
         // db.files.find({sharedWith: {$elemMatch: {$eq: "minivan_test_user"}}}).sort({updatedAt: -1, _id: -1}).skip(0).limit(10)
-        let continuationToken = null;
         let pageCount = 0;
         let page = [];
         apiClientConfig.params.username = randomUser.username;
@@ -481,7 +470,7 @@ describe('Connect to MongoDB', () => {
         apiClientConfig.headers = { Authorization: `Bearer ${randomUser.generateAuthToken()}` };
 
         do {
-          apiClientConfig.params.continuation_token = continuationToken;
+          apiClientConfig.params.page = pageCount + 1;
           const res = await apiClient.get('/api/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
@@ -491,31 +480,28 @@ describe('Connect to MongoDB', () => {
             .limit(defaultPageLimit);
           expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
           if (page.length !== defaultPageLimit) break;
-          continuationToken = page[page.length - 1];
           pageCount++;
         } while (true);
       });
 
       test('status 200 for recommended files', async () => {
-        // db.files.find({publishedAt: {$ne: null}}, {_id: {$ne: 'put id here'}}, {name: 1, publishedAt: 1, updatedAt: 1}).sort({publishedAt: -1, _id: -1})
-        let continuationToken = null;
+        // db.files.find({publishedAt: {$ne: null}, $text: {$search: 'file tags'}, _id: {$ne: ObjectId("635e892aa0b16365dca5602b")}}, {name: 1, likeCount: 1, authorUsername: 1}).sort({likeCount: -1, _id: -1}).limit(10)
         let pageCount = 0;
         let page = [];
 
         const randomFile = _.sample(files);
 
         do {
-          apiClientConfig.params.continuation_token = continuationToken;
+          apiClientConfig.params.page = pageCount + 1;
           const res = await apiClient.get(`/api/files/${randomFile.id}/recommend`, apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
-            .find({ publishedAt: { $ne: null }, _id: { $ne: randomFile.id } })
-            .sort({ publishedAt: -1, _id: -1 })
+            .find({ publishedAt: { $ne: null }, _id: { $ne: randomFile.id }, $text: { $search: randomFile.tags } })
+            .sort({ likeCount: -1, _id: -1 })
             .skip(pageCount * defaultPageLimit)
             .limit(defaultPageLimit);
           expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
           if (page.length !== defaultPageLimit) break;
-          continuationToken = page[page.length - 1];
           pageCount++;
         } while (true);
       });

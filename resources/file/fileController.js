@@ -1,9 +1,8 @@
 const express = require('express');
 const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
-const { File, viewFileFieldsFull } = require('./fileSchema.js');
+const { File, viewFileFieldsFull, editFileFields, viewFileFields } = require('./fileSchema');
 const { handleError, mapErrors } = require('../../utils/errorUtils');
 const _ = require('lodash');
-const { editFileFields, viewFileFields } = require('./fileSchema');
 
 const FileRouter = express.Router();
 
@@ -13,6 +12,8 @@ FileRouter.get('/', identifyIfLoggedIn, getFiles);
 FileRouter.get('/:id', getFileToView);
 // get a file to edit
 FileRouter.get('/:id/edit', isLoggedIn, getFileToEdit);
+// get file recommendations
+FileRouter.get('/:id/recommend', identifyIfLoggedIn, getFileRecommendations);
 // create a file
 FileRouter.post('/', isLoggedIn, postFile);
 // update a file
@@ -24,20 +25,10 @@ FileRouter.delete('/:id', isLoggedIn, deleteFile);
 FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 // add comment to a file
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
-// get file recommendations
-FileRouter.get('/:id/recommend', identifyIfLoggedIn, getRecommendations);
 
 async function getFiles (req, res) {
   // query = { keywords, tile_dimension, type, sort_by, mode, limit, authorUsername }
-  let { keywords, continuationToken, limit, sortBy, mode } = req.query;
-  if (continuationToken != null) {
-    try {
-      continuationToken = JSON.parse(continuationToken);
-    } catch (err) {
-      handleError(res, 400);
-      return;
-    }
-  }
+  let { keywords, limit, page, sortBy, mode } = req.query;
 
   const findQuery = {};
   const sortByQuery = [];
@@ -72,34 +63,19 @@ async function getFiles (req, res) {
   // sort by's
   switch (sortBy) {
     case 'publish_date':
-      if (continuationToken != null) {
-        findQuery.publishedAt = { $lt: continuationToken.publishedAt };
-      }
       sortByQuery.push(['publishedAt', -1]);
       break;
     case 'update_date':
-      if (continuationToken != null) {
-        findQuery.updatedAt = { $lt: continuationToken.updatedAt };
-      }
       sortByQuery.push(['updatedAt', -1]);
       break;
     case 'likes':
-      if (continuationToken != null) {
-        findQuery.likeCount = { $lt: continuationToken.likeCount };
-      }
       sortByQuery.push(['likeCount', -1]);
       break;
     default:
       if (mode === 'shared' || mode === 'your_files') {
         sortByQuery.push(['updatedAt', -1]);
-        if (continuationToken != null) {
-          findQuery.updatedAt = { $lt: continuationToken.updatedAt };
-        }
       } else {
         sortByQuery.push(['publishedAt', -1]);
-        if (continuationToken != null) {
-          findQuery.publishedAt = { $lt: continuationToken.publishedAt };
-        }
       }
       break;
   }
@@ -109,10 +85,45 @@ async function getFiles (req, res) {
     _.set(findQuery, 'publishedAt.$ne', null);
   }
 
+  limit = limit == null ? 10 : parseInt(limit);
+  page = page == null ? 1 : parseInt(page);
+  const skip = (page - 1) * limit;
+
   const files = await File
     .find(findQuery)
     .sort(sortByQuery)
-    .limit(limit ?? 10)
+    .skip(skip)
+    .limit(limit)
+    .select(viewFileFields.join(' '))
+    .catch(() => []);
+
+  res.json({ files });
+}
+
+async function getFileRecommendations (req, res) {
+  const file = await File.findById(req.params.id).catch(() => null);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
+
+  let { limit, page } = req.query;
+
+  const findQuery = {
+    $text: { $search: file.tags },
+    _id: { $ne: file._id },
+    publishedAt: { $ne: null },
+  };
+
+  limit = limit == null ? 10 : parseInt(limit);
+  page = page == null ? 1 : parseInt(page);
+  const skip = (page - 1) * limit;
+
+  const files = await File
+    .find(findQuery)
+    .sort([['likeCount', -1], ['_id', -1]])
+    .limit(limit)
+    .skip(skip)
     .select(viewFileFields.join(' '))
     .catch(() => []);
 
@@ -252,49 +263,6 @@ async function addCommentToFile (req, res) {
   }
 
   res.json({ message: 'Comment added successfully' });
-}
-
-async function getRecommendations (req, res) {
-  let { limit, continuationToken } = req.query;
-
-  const file = await File.findById(req.params.id).catch(() => null);
-  if (file == null) {
-    handleError(res, 404);
-    return;
-  }
-
-  if (continuationToken != null) {
-    try {
-      continuationToken = JSON.parse(continuationToken);
-    } catch (err) {
-      handleError(res, 400);
-      return;
-    }
-  }
-
-  const findQuery = {};
-  const sortByQuery = [];
-
-  findQuery.publishedAt = { $ne: null };
-  findQuery._id = { $ne: req.params.id };
-
-  if (continuationToken != null) {
-    findQuery.publishedAt = { $lt: continuationToken.publishedAt };
-  }
-
-  sortByQuery.push(['publishedAt', -1]);
-  sortByQuery.push(['_id', -1]);
-
-  const viewFileFields = ['name', 'updatedAt', 'publishedAt'];
-
-  const files = await File
-    .find(findQuery)
-    .sort(sortByQuery)
-    .limit(limit ?? 10)
-    .select(viewFileFields.join(' '))
-    .catch(() => []);
-
-  res.json({ files });
 }
 
 module.exports = { FileRouter };

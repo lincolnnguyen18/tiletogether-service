@@ -7,7 +7,7 @@ const _ = require('lodash');
 const dotenv = require('dotenv');
 dotenv.config({ path: '../.env.development' });
 
-const numUsers = 5;
+const numUsers = 10;
 const numFiles = 50;
 
 const users = [];

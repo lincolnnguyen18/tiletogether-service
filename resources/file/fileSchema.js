@@ -90,14 +90,14 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
     .sampleSize(users, _.random(0, users.length))
     .map((user) => ({
       username: user.username,
-      content: faker.random.words(_.random(50, 100)),
+      content: faker.lorem.paragraphs(_.random(1, 2)),
       createdAt: faker.date.between(createdAt, updatedAt),
     }));
 
   return {
     name: faker.random.words(_.random(1, 5)) + ' test file',
     authorUsername,
-    description: faker.random.words(_.random(150, 200)),
+    description: faker.lorem.paragraphs(_.random(3, 6)),
     tileDimension,
     width,
     height,

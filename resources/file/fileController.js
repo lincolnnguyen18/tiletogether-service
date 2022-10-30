@@ -285,8 +285,6 @@ async function getRecommendations (req, res) {
   sortByQuery.push(['publishedAt', -1]);
   sortByQuery.push(['_id', -1]);
 
-  const viewFileFields = ['name', 'updatedAt', 'publishedAt'];
-
   const files = await File
     .find(findQuery)
     .sort(sortByQuery)

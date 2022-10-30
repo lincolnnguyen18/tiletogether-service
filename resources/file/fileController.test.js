@@ -495,6 +495,30 @@ describe('Connect to MongoDB', () => {
           pageCount++;
         } while (true);
       });
+
+      test('status 200 for recommended files', async () => {
+        // db.files.find({publishedAt: {$ne: null}}, {_id: {$ne: 'put id here'}}, {name: 1, publishedAt: 1, updatedAt: 1}).sort({publishedAt: -1, _id: -1})
+        let continuationToken = null;
+        let pageCount = 0;
+        let page = [];
+
+        const randomFile = _.sample(files);
+
+        do {
+          apiClientConfig.params.continuation_token = continuationToken;
+          const res = await apiClient.get(`/api/files/${randomFile.id}/recommend`, apiClientConfig);
+          page = res.data.files;
+          const expectedPage = await File
+            .find({ publishedAt: { $ne: null }, _id: { $ne: randomFile.id } })
+            .sort({ publishedAt: -1, _id: -1 })
+            .skip(pageCount * defaultPageLimit)
+            .limit(defaultPageLimit);
+          expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
+          if (page.length !== defaultPageLimit) break;
+          continuationToken = page[page.length - 1];
+          pageCount++;
+        } while (true);
+      });
     });
   });
 });

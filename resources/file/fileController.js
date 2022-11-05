@@ -253,15 +253,15 @@ async function addCommentToFile (req, res) {
     handleError(res, 404);
     return;
   }
-
+  const comment = { username: req.user.username, content, createdAt: Date.now() };
   try {
-    await File.updateOne({ _id: req.params.id }, { $push: { comments: { username: req.user.username, content, createdAt: Date.now() } }, $inc: { commentCount: 1 } });
+    await File.updateOne({ _id: req.params.id }, { $push: { comments: comment }, $inc: { commentCount: 1 } });
   } catch (err) {
     handleError(res, 500);
     return;
   }
 
-  res.json({ message: 'Comment added successfully' });
+  res.json({ message: 'Comment added successfully', comment });
 }
 
 module.exports = { FileRouter };

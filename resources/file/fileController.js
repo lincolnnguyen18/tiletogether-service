@@ -254,10 +254,9 @@ async function addCommentToFile (req, res) {
     return;
   }
 
-  await File.updateOne({ _id: req.params.id }, { $push: { comments: { username: req.user.username, content, createdAt: Date.now() } }, $inc: { commentCount: 1 } });
-
-  const saveRes = await file.save().catch(() => {});
-  if (saveRes == null) {
+  try {
+    await File.updateOne({ _id: req.params.id }, { $push: { comments: { username: req.user.username, content, createdAt: Date.now() } }, $inc: { commentCount: 1 } });
+  } catch (err) {
     handleError(res, 500);
     return;
   }

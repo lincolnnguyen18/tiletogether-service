@@ -288,8 +288,8 @@ describe('Connect to MongoDB', () => {
     });
 
     describe('query files', () => {
-      const numUsers = 5;
-      const numFiles = 50;
+      const numUsers = 3;
+      const numFiles = 10;
 
       const users = [];
       let files = [];

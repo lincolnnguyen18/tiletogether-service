@@ -92,7 +92,8 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
       username: user.username,
       content: faker.lorem.paragraphs(_.random(1, 2)),
       createdAt: faker.date.between(createdAt, updatedAt),
-    }));
+    }))
+    .sort((a, b) => b.createdAt - a.createdAt);
 
   return {
     name: faker.random.words(_.random(1, 5)) + ' test file',

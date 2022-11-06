@@ -242,7 +242,8 @@ async function setFileLike (req, res) {
     return;
   }
 
-  res.json({ message: 'Like set successfully' });
+  const editFile = await File.findById(req.params.id).catch(() => null);
+  res.json({ file: editFile });
 }
 
 async function addCommentToFile (req, res) {
@@ -254,6 +255,7 @@ async function addCommentToFile (req, res) {
     return;
   }
   const comment = { username: req.user.username, content, createdAt: Date.now() };
+
   try {
     await File.updateOne({ _id: req.params.id }, { $push: { comments: { $each: [comment], $position: 0 } }, $inc: { commentCount: 1 } });
   } catch (err) {
@@ -261,7 +263,8 @@ async function addCommentToFile (req, res) {
     return;
   }
 
-  res.json({ message: 'Comment added successfully', comment });
+  const editFile = await File.findById(req.params.id).catch(() => null);
+  res.json({ file: editFile });
 }
 
 module.exports = { FileRouter };

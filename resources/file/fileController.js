@@ -255,7 +255,7 @@ async function addCommentToFile (req, res) {
   }
   const comment = { username: req.user.username, content, createdAt: Date.now() };
   try {
-    await File.updateOne({ _id: req.params.id }, { $push: { comments: comment }, $inc: { commentCount: 1 } });
+    await File.updateOne({ _id: req.params.id }, { $push: { comments: { $each: [comment], $position: 0 } }, $inc: { commentCount: 1 } });
   } catch (err) {
     handleError(res, 500);
     return;

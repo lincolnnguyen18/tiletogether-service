@@ -224,26 +224,18 @@ async function setFileLike (req, res) {
     return;
   }
 
-  const currentlyLiked = await File.findOne({ _id: req.params.id, likes: { $elemMatch: { username: req.user.username } } }) != null;
-
-  if (liked === currentlyLiked) {
-    handleError(res, 400, `File is already ${liked ? 'liked' : 'unliked'}`);
-    return;
-  }
-
   try {
     if (liked) {
-      await File.updateOne({ _id: req.params.id }, { $push: { likes: { username: req.user.username, createdAt: Date.now() } }, $inc: { likeCount: 1 } });
+      await File.findByIdAndUpdate(req.params.id, { $push: { likes: { username: req.user.username, createdAt: Date.now() } }, $inc: { likeCount: 1 } }, { new: true });
     } else if (!liked) {
-      await File.updateOne({ _id: req.params.id }, { $pull: { likes: { username: req.user.username } }, $inc: { likeCount: -1 } });
+      await File.findByIdAndUpdate(req.params.id, { $pull: { likes: { username: req.user.username } }, $inc: { likeCount: -1 } }, { new: true });
     }
   } catch (err) {
     handleError(res, 500);
     return;
   }
 
-  const editFile = await File.findById(req.params.id).catch(() => null);
-  res.json({ file: editFile });
+  res.json({ message: 'File like set to ' + liked });
 }
 
 async function addCommentToFile (req, res) {

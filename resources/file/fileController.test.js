@@ -37,13 +37,11 @@ describe('Connect to MongoDB', () => {
 
   // No schema is created in db
   describe('File Generation Test', () => {
-    const users = [];
+    let users;
     let file;
 
     beforeAll(async () => {
-      users.push(User.newTestUser());
-      users.push(User.newTestUser());
-      users.push(User.newTestUser());
+      users = _.times(3, () => User.newTestUser());
     });
 
     test('File without likes & comments', async () => {
@@ -156,11 +154,42 @@ describe('Connect to MongoDB', () => {
         validFileId = file._id;
       });
 
-      test('status 200', async () => {
+      test('status 200 for renaming', async () => {
         const newName = 'new name';
         await apiClient.patch(`/api/files/${validFileId}`, { name: newName }, apiClientConfig);
         file = await File.findById(validFileId);
         expect(file.name).toBe(newName);
+      });
+
+      test('status 200 for modifying sharedWith', async () => {
+        let newSharedWith = await Promise.all(_.times(3, () => User.create(User.newTestUser())));
+        newSharedWith = newSharedWith.map(u => u.username);
+
+        expect(file.sharedWith.length).toBe(0);
+        await apiClient.patch(`/api/files/${validFileId}`, { sharedWith: newSharedWith }, apiClientConfig);
+        file = await File.findById(validFileId);
+        expect(file.sharedWith.sort()).toEqual(newSharedWith.sort());
+      });
+
+      // since publishedAt is set server side, for user to publish all they need to put in publishedAt is a non-null value
+      test('status 200 for publishing file', async () => {
+        // set file publishedAt to null
+        file.publishedAt = null;
+        await file.save();
+
+        await apiClient.patch(`/api/files/${validFileId}`, { publishedAt: true }, apiClientConfig);
+        file = await File.findById(validFileId);
+        expect(file.publishedAt).not.toBeNull();
+      });
+
+      test('status 400 for modifying sharedWith', async () => {
+        const newSharedWith = ['invalidUsername'];
+
+        const sharedWithLength = file.sharedWith.length;
+        const error = await apiClient.patch(`/api/files/${validFileId}`, { sharedWith: newSharedWith }, apiClientConfig).catch(err => err.response);
+        expect(error.status).toBe(400);
+        file = await File.findById(validFileId);
+        expect(file.sharedWith.length).toBe(sharedWithLength);
       });
 
       test('status 400', async () => {

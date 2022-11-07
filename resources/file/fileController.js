@@ -171,7 +171,6 @@ async function postFile (req, res) {
 
   file.authorUsername = req.user.username;
   file = new File(file);
-  file.sharedWith = [];
   const createRes = await File.create(file).catch(err => err);
 
   if (createRes.errors != null) {
@@ -195,32 +194,55 @@ async function patchFile (req, res) {
     return;
   }
 
-  if (req.body.sharedWith) {
-    const { username, isRemove } = req.body.sharedWith;
-    const user = await User.findOne({ username });
+  const newSharedWith = req.body.sharedWith;
 
-    if (user == null) {
-      handleError(res, 400, `User ${username} does not exist!`);
+  if (newSharedWith != null) {
+    if (file.authorUsername !== req.user.username) {
+      handleError(res, 401, 'You cannot change the sharedWith field unless you are the original author');
       return;
-    }
-
-    if (isRemove) {
-      if (!file.sharedWith.includes(username)) {
-        handleError(res, 400, `You have not shared this file with ${username}!`);
-        return;
-      }
-      _.remove(file.sharedWith, username);
     } else {
-      if (file.sharedWith.includes(username)) {
-        handleError(res, 400, `You already shared this file with ${username}!`);
+      // verify user not already shared with (sharedWith list is not unique)
+      const alreadySharedWith = _.uniq(newSharedWith).length !== newSharedWith.length;
+      if (alreadySharedWith) {
+        handleError(res, 400, { sharedWith: 'You have already shared the file with this user' });
         return;
       }
-      file.sharedWith.push(username);
+
+      // verify user is not the author
+      const isAuthor = newSharedWith.includes(req.user.username);
+      if (isAuthor) {
+        handleError(res, 400, { sharedWith: 'You cannot share the file with yourself' });
+        return;
+      }
+
+      // get difference between old and new sharedWith
+      const oldSharedWith = file.sharedWith;
+      const addedSharedWith = _.difference(newSharedWith, oldSharedWith);
+
+      // verify all added users exist
+      const usersExist = await User.countDocuments({ username: { $in: addedSharedWith } }).catch(() => 0) === addedSharedWith.length;
+      if (!usersExist) {
+        handleError(res, 400, { sharedWith: 'Invalid username' });
+        return;
+      }
     }
-    req.body = { sharedWith: file.sharedWith };
   }
 
-  const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).populate('rootLayer').exec().catch(err => err);
+  if (req.body.publishedAt != null) {
+    if (file.authorUsername !== req.user.username) {
+      handleError(res, 401, 'You cannot change the publishedAt field unless you are the original author');
+      return;
+    } else {
+      if (!req.body.publishedAt) {
+        req.body.publishedAt = null;
+      // if publishedAt not already set, set it to now
+      } else if (file.publishedAt == null) {
+        req.body.publishedAt = new Date();
+      }
+    }
+  }
+
+  const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).catch(err => err);
   if (updateRes.errors != null) {
     handleError(res, 400, mapErrors(updateRes.errors));
     return;

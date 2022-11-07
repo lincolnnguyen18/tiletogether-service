@@ -3,6 +3,7 @@ const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
 const { File, viewFileFieldsFull, editFileFields, viewFileFields } = require('./fileSchema');
 const { handleError, mapErrors } = require('../../utils/errorUtils');
 const _ = require('lodash');
+const { User } = require('../user/userSchema');
 
 const FileRouter = express.Router();
 
@@ -191,6 +192,54 @@ async function patchFile (req, res) {
   if (file.authorUsername !== req.user.username && !file.sharedWith.includes(req.user.username)) {
     handleError(res, 404);
     return;
+  }
+
+  const newSharedWith = req.body.sharedWith;
+
+  if (newSharedWith != null) {
+    if (file.authorUsername !== req.user.username) {
+      handleError(res, 401, 'You cannot change the sharedWith field unless you are the original author');
+      return;
+    } else {
+      // verify user not already shared with (sharedWith list is not unique)
+      const alreadySharedWith = _.uniq(newSharedWith).length !== newSharedWith.length;
+      if (alreadySharedWith) {
+        handleError(res, 400, { sharedWith: 'You have already shared the file with this user' });
+        return;
+      }
+
+      // verify user is not the author
+      const isAuthor = newSharedWith.includes(req.user.username);
+      if (isAuthor) {
+        handleError(res, 400, { sharedWith: 'You cannot share the file with yourself' });
+        return;
+      }
+
+      // get difference between old and new sharedWith
+      const oldSharedWith = file.sharedWith;
+      const addedSharedWith = _.difference(newSharedWith, oldSharedWith);
+
+      // verify all added users exist
+      const usersExist = await User.countDocuments({ username: { $in: addedSharedWith } }).catch(() => 0) === addedSharedWith.length;
+      if (!usersExist) {
+        handleError(res, 400, { sharedWith: 'Invalid username' });
+        return;
+      }
+    }
+  }
+
+  if (req.body.publishedAt != null) {
+    if (file.authorUsername !== req.user.username) {
+      handleError(res, 401, 'You cannot change the publishedAt field unless you are the original author');
+      return;
+    } else {
+      if (!req.body.publishedAt) {
+        req.body.publishedAt = null;
+      // if publishedAt not already set, set it to now
+      } else if (file.publishedAt == null) {
+        req.body.publishedAt = new Date();
+      }
+    }
   }
 
   const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).catch(err => err);

@@ -125,9 +125,6 @@ describe('Connect to MongoDB', () => {
         const likedFile = await File.findOne({ _id: file._id, 'likes.username': user.username });
         expect(likedFile).not.toBeNull();
         expect(file.likeCount).toBe(likeCount + 1);
-
-        const res400 = await apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig).catch(err => err.response);
-        expect(res400.status).toBe(400);
       });
 
       test('status 200 for unliking', async () => {

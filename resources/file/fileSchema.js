@@ -113,6 +113,7 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
     likeCount: likes.length,
     comments,
     commentCount: comments.length,
+    sharedWith: [],
   };
 };
 

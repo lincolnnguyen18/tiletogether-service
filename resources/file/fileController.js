@@ -26,8 +26,6 @@ FileRouter.delete('/:id', isLoggedIn, deleteFile);
 FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 // add comment to a file
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
-// add collaborator for a file
-FileRouter.post('/:id/share', isLoggedIn, editFileCollaborator);
 
 async function getFiles (req, res) {
   // query = { keywords, tile_dimension, type, sort_by, mode, limit, authorUsername }
@@ -197,7 +195,32 @@ async function patchFile (req, res) {
     return;
   }
 
-  const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).catch(err => err);
+  if (req.body.sharedWith) {
+    const { username, isRemove } = req.body.sharedWith;
+    const user = await User.findOne({ username });
+
+    if (user == null) {
+      handleError(res, 400, `User ${username} does not exist!`);
+      return;
+    }
+
+    if (isRemove) {
+      if (!file.sharedWith.includes(username)) {
+        handleError(res, 400, `You have not shared this file with ${username}!`);
+        return;
+      }
+      _.remove(file.sharedWith, username);
+    } else {
+      if (file.sharedWith.includes(username)) {
+        handleError(res, 400, `You already shared this file with ${username}!`);
+        return;
+      }
+      file.sharedWith.push(username);
+    }
+    req.body = { sharedWith: file.sharedWith };
+  }
+
+  const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).populate('rootLayer').exec().catch(err => err);
   if (updateRes.errors != null) {
     handleError(res, 400, mapErrors(updateRes.errors));
     return;
@@ -257,46 +280,6 @@ async function addCommentToFile (req, res) {
   } catch (err) {
     handleError(res, 500);
     return;
-  }
-
-  const editFile = await File.findById(req.params.id).catch(() => null);
-  res.json({ file: editFile });
-}
-
-async function editFileCollaborator (req, res) {
-  const { username, isRemove } = req.body;
-
-  const file = await File.findById(req.params.id).catch(() => null);
-  if (file == null) {
-    handleError(res, 404);
-    return;
-  }
-
-  const user = await User.findOne({ username });
-  if (user == null) {
-    handleError(res, 400, `User ${username} does not exist!`);
-    return;
-  }
-
-  if (file.sharedWith.includes(username)) {
-    if (isRemove) {
-      try {
-        await File.updateOne({ _id: req.params.id }, { $pull: { sharedWith: username } });
-      } catch (err) {
-        handleError(res, 500);
-        return;
-      }
-    } else {
-      handleError(res, 400, `You already shared this file with ${username}!`);
-      return;
-    }
-  } else {
-    try {
-      await File.updateOne({ _id: req.params.id }, { $push: { sharedWith: { $each: [username], $position: 0 } } });
-    } catch (err) {
-      handleError(res, 500);
-      return;
-    }
   }
 
   const editFile = await File.findById(req.params.id).catch(() => null);

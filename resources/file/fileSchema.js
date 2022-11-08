@@ -26,6 +26,8 @@ const layerSchema = Schema({
   tilesetLayerUrl: { type: String },
   type: { type: String, required: true, enum: ['layer', 'group'] },
   visible: { type: Boolean, default: true, required: true },
+  // set _id manually to allow client side to set id later on (when creating new layers)
+  _id: { type: Schema.Types.ObjectId, default: mongoose.Types.ObjectId },
 });
 layerSchema.add({ layers: [{ type: layerSchema }] });
 
@@ -83,7 +85,7 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
     .sampleSize(users, _.random(0, users.length))
     .map((user) => ({
       username: user.username,
-      createdAt: faker.date.between(createdAt, updatedAt),
+      createdAt: faker.date.between(createdAt, new Date()),
     }));
 
   const comments = _
@@ -91,7 +93,7 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
     .map((user) => ({
       username: user.username,
       content: faker.lorem.paragraphs(_.random(1, 2)),
-      createdAt: faker.date.between(createdAt, updatedAt),
+      createdAt: faker.date.between(createdAt, new Date()),
     }))
     .sort((a, b) => b.createdAt - a.createdAt);
 

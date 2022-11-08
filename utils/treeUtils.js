@@ -3,10 +3,13 @@ const { faker } = require('@faker-js/faker');
 
 function randomLayer () {
   const type = _.sample(['group', 'layer']);
+  const imageUrls = _.range(1, 30).map((i) => `/mock-layer-images/${i}.png`);
+  const imageUrl = _.sample(imageUrls);
   return {
     type,
     name: faker.lorem.word(),
     layers: [],
+    tilesetLayerUrl: type === 'layer' ? imageUrl : undefined,
   };
 }
 

@@ -242,6 +242,9 @@ async function patchFile (req, res) {
     }
   }
 
+  // update file updatedAt field
+  req.body.updatedAt = new Date();
+
   const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).catch(err => err);
   if (updateRes.errors != null) {
     handleError(res, 400, mapErrors(updateRes.errors));

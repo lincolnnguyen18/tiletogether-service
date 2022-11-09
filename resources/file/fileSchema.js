@@ -71,7 +71,7 @@ fileSchema.index({ authorUsername: 'text', name: 'text', tags: 'text' });
 
 fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
   const createdAt = faker.date.past();
-  const updatedAt = faker.date.between(createdAt, new Date());
+  const updatedAt = faker.date.between(createdAt, Date.now());
   const tileDimension = _.sample(tileDimensions);
   const width = _.random(1, 10);
   const height = _.random(1, 10);
@@ -85,7 +85,7 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
     .sampleSize(users, _.random(0, users.length))
     .map((user) => ({
       username: user.username,
-      createdAt: faker.date.between(createdAt, new Date()),
+      createdAt: faker.date.between(createdAt, Date.now()),
     }));
 
   const comments = _
@@ -93,7 +93,7 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
     .map((user) => ({
       username: user.username,
       content: faker.lorem.paragraphs(_.random(1, 2)),
-      createdAt: faker.date.between(createdAt, new Date()),
+      createdAt: faker.date.between(createdAt, Date.now()),
     }))
     .sort((a, b) => b.createdAt - a.createdAt);
 

@@ -41,7 +41,7 @@ async function main () {
   // Create test file
   let testRootLayer = { name: 'test_root_layer', type: 'group' };
   const testLayer1 = { name: 'test_layer_1', type: 'layer' };
-  testLayer1.tilesetLayerUrl = 'http://localhost:3000/mock-data/file-image.png';
+  testLayer1.tilesetLayerUrl = '/mock-layer-images/12.png';
   testRootLayer.layers = [testLayer1];
   testRootLayer = await Layer.create(testRootLayer);
 
@@ -52,7 +52,7 @@ async function main () {
   testFile.width = 9;
   testFile.height = 6;
   testFile.type = 'tileset';
-  testFile.updatedAt = new Date();
+  testFile.updatedAt = Date.now();
   await File.create(testFile);
 
   await teardownApp(server, mongoose);

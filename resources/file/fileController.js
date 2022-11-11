@@ -135,7 +135,7 @@ async function getFileRecommendations (req, res) {
 
 async function getFileToView (req, res) {
   const file = await File.findById(req.params.id).catch(() => null);
-  if (file == null) {
+  if (file == null || file.publishedAt == null) {
     handleError(res, 404);
     return;
   }
@@ -333,4 +333,5 @@ async function addReplyToComment (req, res) {
 
   res.json({ file: editedFile });
 }
+
 module.exports = { FileRouter };

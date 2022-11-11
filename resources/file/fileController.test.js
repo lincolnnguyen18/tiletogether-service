@@ -264,6 +264,7 @@ describe('Connect to MongoDB', () => {
 
       beforeAll(async () => {
         file = await File.newTestFile(user.username);
+        file.publishedAt = Date.now();
         fileInstance = await File.create(file);
         validFileId = fileInstance._id;
       });

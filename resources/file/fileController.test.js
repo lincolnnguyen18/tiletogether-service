@@ -127,7 +127,7 @@ describe('Connect to MongoDB', () => {
 
       test('status 200 for unliking', async () => {
         const likeCount = file.likeCount;
-        file.likes.push({ username: user.username, createdAt: new Date() });
+        file.likes.push({ username: user.username, createdAt: Date.now() });
         await file.save();
 
         await apiClient.post(`/api/files/${validFileId}/like`, { liked: false }, apiClientConfig);

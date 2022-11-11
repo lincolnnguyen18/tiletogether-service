@@ -237,13 +237,13 @@ async function patchFile (req, res) {
         req.body.publishedAt = null;
       // if publishedAt not already set, set it to now
       } else if (file.publishedAt == null) {
-        req.body.publishedAt = new Date();
+        req.body.publishedAt = Date.now();
       }
     }
   }
 
   // update file updatedAt field
-  req.body.updatedAt = new Date();
+  req.body.updatedAt = Date.now();
 
   const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).catch(err => err);
   if (updateRes.errors != null) {

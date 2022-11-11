@@ -240,16 +240,18 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 200', async () => {
+        // test comment
         const commentCount = fileInstance.commentCount;
         await apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
-
         const commentedFile = await File.findOne({ _id: validFileId, 'comments.username': user.username });
         expect(commentedFile).not.toBeNull();
         expect(commentedFile.commentCount).toBe(commentCount + 1);
 
+        // test reply
         const comment = commentedFile.comments[commentCount];
-        await apiClient.post(`/api/files/${validFileId}/reply`, { content: 'test reply', parentId: comment._id }, apiClientConfig);
-        expect(commentedFile.commentCount).toBe(commentCount + 1);
+        await apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test reply', parentId: comment._id }, apiClientConfig);
+        const repliedFile = await File.findOne({ _id: validFileId, 'comments.username': user.username });
+        expect(repliedFile.commentCount).toBe(commentCount + 2);
       });
 
       test('status 404', async () => {

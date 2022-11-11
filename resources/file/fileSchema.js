@@ -14,6 +14,10 @@ const viewFileFieldsFull = ['id', 'authorUsername', 'likes', 'likeCount', 'comme
 const layerSchema = Schema({
   name: { type: String, required: true },
   opacity: { type: Number, default: 1, required: true, min: 0, max: 1 },
+  position: new Schema({
+    x: { type: Number, default: 0, required: true },
+    y: { type: Number, default: 0, required: true },
+  }),
   properties: new Schema({
     name: { type: String, required: true },
     type: { type: String, required: true },

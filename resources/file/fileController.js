@@ -301,16 +301,16 @@ async function addCommentToFile (req, res) {
     return;
   }
   const comment = { username: req.user.username, content, createdAt: Date.now() };
+  let editedFile;
 
   try {
-    await File.updateOne({ _id: req.params.id }, { $push: { comments: { $each: [comment], $position: 0 } }, $inc: { commentCount: 1 } });
+    editedFile = await File.findByIdAndUpdate(req.params.id, { $push: { comments: { $each: [comment], $position: 0 } }, $inc: { commentCount: 1 } }, { new: true });
   } catch (err) {
     handleError(res, 500);
     return;
   }
 
-  const editFile = await File.findById(req.params.id).catch(() => null);
-  res.json({ file: editFile });
+  res.json({ file: editedFile });
 }
 
 async function addReplyToComment (req, res) {
@@ -322,15 +322,15 @@ async function addReplyToComment (req, res) {
     return;
   }
   const comment = { username: req.user.username, content, createdAt: Date.now(), parentId };
+  let editedFile;
 
   try {
-    await File.updateOne({ _id: req.params.id }, { $push: { comments: { $each: [comment], $position: 0 } }, $inc: { commentCount: 1 } });
+    editedFile = await File.findByIdAndUpdate(req.params.id, { $push: { comments: { $each: [comment], $position: 0 } }, $inc: { commentCount: 1 } }, { new: true });
   } catch (err) {
     handleError(res, 500);
     return;
   }
 
-  const editFile = await File.findById(req.params.id).catch(() => null);
-  res.json({ file: editFile });
+  res.json({ file: editedFile });
 }
 module.exports = { FileRouter };

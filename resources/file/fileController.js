@@ -26,6 +26,8 @@ FileRouter.delete('/:id', isLoggedIn, deleteFile);
 FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 // add comment to a file
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
+// add reply to a comment
+FileRouter.post('/:id/reply', isLoggedIn, addReplyToComment);
 
 async function getFiles (req, res) {
   // query = { keywords, tile_dimension, type, sort_by, mode, limit, authorUsername }
@@ -299,16 +301,36 @@ async function addCommentToFile (req, res) {
     return;
   }
   const comment = { username: req.user.username, content, createdAt: Date.now() };
+  let editedFile;
 
   try {
-    await File.updateOne({ _id: req.params.id }, { $push: { comments: { $each: [comment], $position: 0 } }, $inc: { commentCount: 1 } });
+    editedFile = await File.findByIdAndUpdate(req.params.id, { $push: { comments: { $each: [comment], $position: 0 } }, $inc: { commentCount: 1 } }, { new: true });
   } catch (err) {
     handleError(res, 500);
     return;
   }
 
-  const editFile = await File.findById(req.params.id).catch(() => null);
-  res.json({ file: editFile });
+  res.json({ file: editedFile });
 }
 
+async function addReplyToComment (req, res) {
+  const { content, parentId } = req.body;
+
+  const file = await File.findById(req.params.id).catch(() => null);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
+  const comment = { username: req.user.username, content, createdAt: Date.now(), parentId };
+  let editedFile;
+
+  try {
+    editedFile = await File.findByIdAndUpdate(req.params.id, { $push: { comments: { $each: [comment], $position: 0 } }, $inc: { commentCount: 1 } }, { new: true });
+  } catch (err) {
+    handleError(res, 500);
+    return;
+  }
+
+  res.json({ file: editedFile });
+}
 module.exports = { FileRouter };

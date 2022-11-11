@@ -14,6 +14,10 @@ const viewFileFieldsFull = ['id', 'authorUsername', 'likes', 'likeCount', 'comme
 const layerSchema = Schema({
   name: { type: String, required: true },
   opacity: { type: Number, default: 1, required: true, min: 0, max: 1 },
+  position: new Schema({
+    x: { type: Number, default: 0, required: true },
+    y: { type: Number, default: 0, required: true },
+  }),
   properties: new Schema({
     name: { type: String, required: true },
     type: { type: String, required: true },
@@ -57,6 +61,7 @@ const fileSchema = Schema({
     username: { type: String, required: true, index: true },
     content: { type: String, required: true },
     createdAt: { type: Date, required: true, default: Date.now },
+    parentId: { type: Schema.Types.ObjectId },
   })],
   commentCount: { type: Number, min: 0, required: true, default: 0 },
   likes: [new Schema({

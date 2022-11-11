@@ -57,6 +57,7 @@ const fileSchema = Schema({
     username: { type: String, required: true, index: true },
     content: { type: String, required: true },
     createdAt: { type: Date, required: true, default: Date.now },
+    parentId: { type: Schema.Types.ObjectId },
   })],
   commentCount: { type: Number, min: 0, required: true, default: 0 },
   likes: [new Schema({

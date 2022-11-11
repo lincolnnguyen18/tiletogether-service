@@ -230,6 +230,35 @@ describe('Connect to MongoDB', () => {
       });
     });
 
+    describe('reply to a comment on a file', () => {
+      let file, fileInstance, validFileId;
+
+      beforeAll(async () => {
+        file = await File.newTestFile(user.username);
+        fileInstance = await File.create(file);
+        validFileId = fileInstance._id;
+      });
+
+      test('status 200', async () => {
+        const commentCount = fileInstance.commentCount;
+        await apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
+
+        const commentedFile = await File.findOne({ _id: validFileId, 'comments.username': user.username });
+        expect(commentedFile).not.toBeNull();
+        expect(commentedFile.commentCount).toBe(commentCount + 1);
+
+        const comment = commentedFile.comments[commentCount];
+        await apiClient.post(`/api/files/${validFileId}/reply`, { content: 'test reply', parentId: comment._id }, apiClientConfig);
+        expect(commentedFile.commentCount).toBe(commentCount + 1);
+      });
+
+      test('status 404', async () => {
+        const invalidFileId = 'abc';
+        const error = await apiClient.post(`/api/files/${invalidFileId}/reply`, { content: 'test comment' }, apiClientConfig).catch(err => err.response);
+        expect(error.status).toBe(404);
+      });
+    });
+
     describe('get a file to view', () => {
       let file, fileInstance, validFileId;
 

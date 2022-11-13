@@ -1,6 +1,6 @@
 const express = require('express');
 const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
-const { File, viewFileFieldsFull, editFileFields, viewFileFields } = require('./fileSchema');
+const { File, viewFileFieldsFull, editFileFields, viewFileFields, Layer } = require('./fileSchema');
 const { handleError, mapErrors } = require('../../utils/errorUtils');
 const _ = require('lodash');
 const { User } = require('../user/userSchema');
@@ -194,8 +194,11 @@ async function postFile (req, res) {
     return;
   }
 
-  const pickedFile = _.pick(file, editFileFields);
-  res.json({ message: 'File created', file: pickedFile });
+  // create rootLayer
+  const rootLayer = await Layer.create({ name: 'root_layer', type: 'group' });
+  const updatedFile = await File.findByIdAndUpdate(createRes._id, { rootLayer: rootLayer._id }, { new: true }).catch(() => null);
+
+  res.json({ message: 'File created', fileId: updatedFile._id });
 }
 
 async function patchFile (req, res) {

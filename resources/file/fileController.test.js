@@ -72,12 +72,8 @@ describe('Connect to MongoDB', () => {
       test('status 200', async () => {
         const validFile = await File.newTestFile(user.username);
         const res = await apiClient.post('/api/files', validFile, apiClientConfig);
-        const fileInDb = await File.findById(res.data.file.id);
+        const fileInDb = await File.findById(res.data.fileId);
         expect(fileInDb).not.toBe(null);
-
-        const fileFields = Object.keys(res.data.file);
-        const difference = _.difference(editFileFields, fileFields);
-        expect(difference).toEqual([]);
       });
 
       test('status 400', async () => {

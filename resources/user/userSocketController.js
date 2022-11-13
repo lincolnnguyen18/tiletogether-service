@@ -25,7 +25,7 @@ async function onJoinRoom (socket, data) {
   }
 
   // verify user has permission to edit file
-  const file = await File.findById(fileId);
+  const file = await File.findById(fileId).catch(() => null);
   const username = user.username;
   if (!file || (!file.sharedWith.includes(username) && !file.authorUsername === username)) {
     handleSocketError('User does not have permission to edit file or file does not exist');

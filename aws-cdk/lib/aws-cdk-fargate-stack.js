@@ -12,17 +12,19 @@ class TileTogetherServiceStack extends Stack {
 
     const vpc = new Vpc(this, 'tiletogether-service-vpc', {
       maxAzs: 2,
-      natGateways: 1,
+      natGateways: 0,
       subnetConfiguration: [
         {
           cidrMask: 24,
           name: 'ingress',
           subnetType: SubnetType.PUBLIC,
+          mapPublicIpOnLaunch: true,
         },
         {
           cidrMask: 24,
           name: 'application',
-          subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+          subnetType: SubnetType.PUBLIC,
+          mapPublicIpOnLaunch: true,
         },
       ],
     });
@@ -30,9 +32,7 @@ class TileTogetherServiceStack extends Stack {
     const loadBalancer = new ApplicationLoadBalancer(this, 'tiletogether-service-lb', {
       vpc,
       internetFacing: true,
-      vpcSubnets: {
-        subnetType: SubnetType.PUBLIC,
-      },
+      vpcSubnets: { subnetGroupName: 'ingress' },
     });
 
     const cluster = new Cluster(this, 'tiletogether-service-cluster', {
@@ -71,9 +71,8 @@ class TileTogetherServiceStack extends Stack {
       memoryLimitMiB: 512,
       desiredCount: 1,
       serviceName: 'tiletogether-service',
-      taskSubnets: vpc.selectSubnets({
-        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
-      }),
+      // select application subnets for taskSubnets
+      taskSubnets: vpc.selectSubnets({ subnetGroupName: 'application' }),
       loadBalancer,
       capacityProviderStrategies: [
         {
@@ -81,6 +80,7 @@ class TileTogetherServiceStack extends Stack {
           weight: 1,
         },
       ],
+      assignPublicIp: true,
     });
 
     fargateService.targetGroup.configureHealthCheck({

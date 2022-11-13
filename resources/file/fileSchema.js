@@ -53,10 +53,16 @@ const fileSchema = Schema({
   width: { type: Number, min: 1, required: [true, 'Width is required'] },
   height: { type: Number, min: 1, required: [true, 'Height is required'] },
   rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
-  tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
+  // only used by maps
+  tilesets: [new Schema({
+    file: { type: Schema.Types.ObjectId, ref: 'File', required: true },
+    // make copy of tileset image url so that map isn't affected if the tileset is updated or deleted
+    imageUrl: { type: String, required: true },
+    name: { type: String, required: true },
+  })],
   imageUrl: String,
   views: { type: Number, min: 0, required: true, default: 0 },
-  tags: { type: String, required: true, index: true },
+  tags: { type: String, index: true },
   publishedAt: { type: Date, sparse: true },
   createdAt: { type: Date, default: Date.now, required: true },
   updatedAt: { type: Date, default: Date.now, required: true },

@@ -144,7 +144,7 @@ Clean up locally by running
 
 ## Other notes
 * You can view the progress and results of GitHub testing and deployment actions at https://github.com/team-orange-cse416/tiletogether-service/actions
-* The TileTogether service (API) is deployed at http://tilet-tilet-u37bwe5numj2-941740168.us-east-1.elb.amazonaws.com
+* The TileTogether service (API) is deployed at http://tilet-tilet-1us2i5vd1zl8p-896953751.us-east-1.elb.amazonaws.com/
 * To run a single jest test, run `npm run test -- -t "<test name>"` where `<test name>` is the name of the test you want to run, e.g. `npm run test -- -t "status 200 for keywords = random tag and random user, sorted by likes"`
 
 ## Building and running Docker container

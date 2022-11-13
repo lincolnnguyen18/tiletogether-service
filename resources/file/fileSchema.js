@@ -18,15 +18,18 @@ const layerSchema = Schema({
     x: { type: Number, default: 0, required: true },
     y: { type: Number, default: 0, required: true },
   }),
-  properties: new Schema({
+  // only used by maps
+  properties: [new Schema({
     name: { type: String, required: true },
     type: { type: String, required: true },
     value: { type: String, required: true },
-  }),
-  tiles: new Schema({
+  })],
+  // only used by maps
+  tiles: [new Schema({
     index: { type: Number, required: true },
     tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
-  }),
+  })],
+  // only used by tilesets
   tilesetLayerUrl: { type: String },
   type: { type: String, required: true, enum: ['layer', 'group'] },
   visible: { type: Boolean, default: true, required: true },
@@ -78,12 +81,12 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
   const createdAt = faker.date.past();
   const updatedAt = faker.date.between(createdAt, Date.now());
   const tileDimension = _.sample(tileDimensions);
-  const width = _.random(1, 10);
-  const height = _.random(1, 10);
+  const width = _.random(50, 100);
+  const height = _.random(50, 100);
   const type = _.sample(['map', 'tileset']);
   const rootLayer = await Layer.create({ name: 'test_root_layer', type: 'group' });
 
-  rootLayer.layers = createRandomTree(3);
+  rootLayer.layers = createRandomTree(3, width * tileDimension, height * tileDimension);
   await rootLayer.save();
 
   const likes = _

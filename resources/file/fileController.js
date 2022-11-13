@@ -169,6 +169,22 @@ async function getFileToEdit (req, res) {
 async function postFile (req, res) {
   let file = req.body;
 
+  // check if width * tileDimension or height * tileDimension is greater than 10,000 pixels
+  const { width, height, tileDimension } = file;
+  const errors = {};
+  if (width != null && tileDimension != null) {
+    if (width * tileDimension > 10000) {
+      errors.width = 'Width cannot be greater than 10,000 pixels';
+    }
+    if (height * tileDimension > 10000) {
+      errors.height = 'Height cannot be greater than 10,000 pixels';
+    }
+  }
+  if (Object.keys(errors).length > 0) {
+    handleError(res, 400, errors);
+    return;
+  }
+
   file.authorUsername = req.user.username;
   file = new File(file);
   const createRes = await File.create(file).catch(err => err);
@@ -226,6 +242,22 @@ async function patchFile (req, res) {
         return;
       }
     }
+  }
+
+  // check if width * tileDimension or height * tileDimension is greater than 10,000 pixels
+  const { width, height, tileDimension } = req.body;
+  const errors = {};
+  if (width != null && tileDimension != null) {
+    if (width * tileDimension > 10000) {
+      errors.width = 'Width cannot be greater than 10,000 pixels';
+    }
+    if (height * tileDimension > 10000) {
+      errors.height = 'Height cannot be greater than 10,000 pixels';
+    }
+  }
+  if (Object.keys(errors).length > 0) {
+    handleError(res, 400, errors);
+    return;
   }
 
   if (req.body.publishedAt != null) {

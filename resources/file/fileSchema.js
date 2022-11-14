@@ -7,17 +7,21 @@ const { createRandomTree } = require('../../utils/treeUtils');
 const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals', 'plants', 'food', 'weapons', 'misc'];
 const tileDimensions = [4, 8, 16, 32, 64];
 
-const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width'];
+const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width', 'layerIds'];
 const viewFileFields = ['id', 'authorUsername', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'views'];
 const viewFileFieldsFull = ['id', 'authorUsername', 'likes', 'likeCount', 'comments', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'description', 'views'];
 
 const layerSchema = Schema({
   name: { type: String, required: true },
   opacity: { type: Number, default: 1, required: true, min: 0, max: 1 },
-  position: new Schema({
-    x: { type: Number, default: 0, required: true },
-    y: { type: Number, default: 0, required: true },
-  }),
+  position: {
+    type: {
+      x: { type: Number, default: 0, required: true },
+      y: { type: Number, default: 0, required: true },
+    },
+    required: true,
+    default: { x: 0, y: 0 },
+  },
   // only used by maps
   properties: [new Schema({
     name: { type: String, required: true },
@@ -29,8 +33,6 @@ const layerSchema = Schema({
     index: { type: Number, required: true },
     tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
   })],
-  // only used by tilesets
-  tilesetLayerUrl: { type: String },
   type: { type: String, required: true, enum: ['layer', 'group'] },
   visible: { type: Boolean, default: true, required: true },
   // set _id manually to allow client side to set id later on (when creating new layers)
@@ -53,6 +55,8 @@ const fileSchema = Schema({
   width: { type: Number, min: 1, required: [true, 'Width is required'] },
   height: { type: Number, min: 1, required: [true, 'Height is required'] },
   rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
+  // only used by tilesets
+  layerIds: [String],
   // only used by maps
   tilesets: [new Schema({
     file: { type: Schema.Types.ObjectId, ref: 'File', required: true },

@@ -4,6 +4,9 @@ const { File, viewFileFieldsFull, editFileFields, viewFileFields, Layer } = requ
 const { handleError, mapErrors } = require('../../utils/errorUtils');
 const _ = require('lodash');
 const { User } = require('../user/userSchema');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { s3Client } = require('../../utils/s3Utils');
+const { GetObjectCommand } = require('@aws-sdk/client-s3');
 
 const FileRouter = express.Router();
 
@@ -163,7 +166,33 @@ async function getFileToEdit (req, res) {
   }
 
   const pickedFile = _.pick(file, editFileFields);
-  res.json({ file: pickedFile });
+  const signedUrls = {};
+
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    // get presigned urls for all layers
+    async function traverseLayer (layer) {
+      // console.log('traversing layer', layer._id);
+      const key = `${file._id}/${layer._id}.png`;
+      // console.log('key', key);
+
+      if (layer.type === 'layer') {
+        const command = new GetObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: key,
+        });
+        signedUrls[layer._id] = await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 });
+        // console.log('got url', signedUrls[layer._id]);
+        // console.log('signedUrls', signedUrls);
+      } else if (layer.layers != null) {
+        // traverse children and await for all of them
+        await Promise.all(layer.layers.map(traverseLayer));
+      }
+    }
+    await traverseLayer(pickedFile.rootLayer);
+    // console.log('signedUrls', signedUrls);
+  }
+
+  res.json({ file: pickedFile, signedUrls });
 }
 
 async function postFile (req, res) {
@@ -276,6 +305,9 @@ async function patchFile (req, res) {
       }
     }
   }
+
+  const allowabledPatchFields = ['name', 'width', 'height', 'tileDimension', 'sharedWith', 'publishedAt'];
+  req.body = _.pick(req.body, allowabledPatchFields);
 
   // update file updatedAt field
   req.body.updatedAt = Date.now();

@@ -16,11 +16,11 @@ const files = [];
 async function main () {
   const server = await setupApp(app, mongoose);
 
-  // Create users
-  for (let i = 0; i < numUsers; i++) {
-    const user = await User.create(User.newTestUser());
-    users.push(user);
-  }
+  // // Create users
+  // for (let i = 0; i < numUsers; i++) {
+  //   const user = await User.create(User.newTestUser());
+  //   users.push(user);
+  // }
 
   // Create user to login with
   let testUser = User.newTestUser();
@@ -30,13 +30,13 @@ async function main () {
   testUser = await User.create(testUser);
   users.push(testUser);
 
-  // Create files
-  for (let i = 0; i < numFiles; i++) {
-    const randomUser = _.sample(users);
-    const file = await File.newTestFile(randomUser.username, users);
-    const fileInstance = await File.create(file);
-    files.push(fileInstance);
-  }
+  // // Create files
+  // for (let i = 0; i < numFiles; i++) {
+  //   const randomUser = _.sample(users);
+  //   const file = await File.newTestFile(randomUser.username, users);
+  //   const fileInstance = await File.create(file);
+  //   files.push(fileInstance);
+  // }
 
   await teardownApp(server, mongoose);
 

@@ -5,6 +5,8 @@ const { Role, ServicePrincipal, ManagedPolicy } = require('aws-cdk-lib/aws-iam')
 const { Repository } = require('aws-cdk-lib/aws-ecr');
 const { ContainerImage, Cluster } = require('aws-cdk-lib/aws-ecs');
 const { ApplicationLoadBalancedFargateService } = require('aws-cdk-lib/aws-ecs-patterns');
+const { Bucket } = require('aws-cdk-lib/aws-s3');
+const { HttpMethod } = require('aws-cdk-lib/aws-events');
 
 class TileTogetherServiceStack extends Stack {
   constructor (scope, id, props) {
@@ -87,6 +89,21 @@ class TileTogetherServiceStack extends Stack {
       path: '/api/health',
       enabled: true,
       healthyHttpCodes: '200',
+    });
+
+    // create bucket for storing file image data
+    // set cors to allow localhost:3000 for development
+    // also allow http://dfq7qlbehwesj.cloudfront.net for production
+    // eslint-disable-next-line no-unused-vars
+    const fileDataBucket = new Bucket(this, 'tiletogether-file-data-bucket', {
+      bucketName: 'tiletogether-file-data-bucket',
+      publicReadAccess: false,
+      cors: [
+        {
+          allowedMethods: [HttpMethod.GET],
+          allowedOrigins: ['http://localhost:3000', 'http://dfq7qlbehwesj.cloudfront.net'],
+        },
+      ],
     });
   }
 }

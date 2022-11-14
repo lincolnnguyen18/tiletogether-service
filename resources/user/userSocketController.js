@@ -1,14 +1,10 @@
 const { User } = require('./userSchema');
 const { File } = require('../file/fileSchema');
-const { getSocketFileId } = require('../../utils/socketUtils');
-
-function handleSocketError (err) {
-  console.log(err);
-}
+const { getSocketFileId, handleSocketError } = require('../../utils/socketUtils');
 
 async function onJoinRoom (socket, data) {
   const { token, fileId } = data;
-  console.log('socketJoinRoom', token, fileId);
+  // console.log('socketJoinRoom', token, fileId);
 
   // verify socket has not already joined a room (socket.rooms should only have 1 room, the socket id)
   const rooms = Array.from(socket.rooms);
@@ -47,29 +43,12 @@ function onLeaveRoom (socket, data) {
   }
 }
 
-function onLayerPosition (socket, data) {
-  const fileId = getSocketFileId(socket);
-  socket.to(fileId).emit('layerPosition', data);
-}
-
 function handleDisconnect () {
   console.log('user disconnected');
-}
-
-function emitChangesSaved (socket) {
-  // emit socketChangesSaved every n seconds
-  const interval = setInterval(() => {
-    // send to just this one socket
-    socket.emit('changesSaved');
-  }, 1000);
-
-  socket.on('disconnect', () => clearInterval(interval));
 }
 
 module.exports = {
   onJoinRoom,
   onLeaveRoom,
-  onLayerPosition,
   handleDisconnect,
-  emitChangesSaved,
 };

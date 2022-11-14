@@ -2,16 +2,14 @@ const { app } = require('../app');
 const mongoose = require('mongoose');
 const { setupApp, teardownApp } = require('../utils/testingUtils');
 const { User } = require('../resources/user/userSchema');
-const { File } = require('../resources/file/fileSchema');
-const _ = require('lodash');
 const dotenv = require('dotenv');
 dotenv.config({ path: '../.env.development' });
 
-const numUsers = 10;
-const numFiles = 50;
-
-const users = [];
-const files = [];
+// const numUsers = 10;
+// const numFiles = 50;
+//
+// const users = [];
+// const files = [];
 
 async function main () {
   const server = await setupApp(app, mongoose);
@@ -23,12 +21,12 @@ async function main () {
   // }
 
   // Create user to login with
-  let testUser = User.newTestUser();
+  const testUser = User.newTestUser();
   testUser.username = 'test';
   testUser.password = 'password123';
   testUser.email = 'test@email.com';
-  testUser = await User.create(testUser);
-  users.push(testUser);
+  await User.create(testUser);
+  // users.push(testUser);
 
   // // Create files
   // for (let i = 0; i < numFiles; i++) {

@@ -93,13 +93,25 @@ async function getFiles (req, res) {
   page = page == null ? 1 : parseInt(page);
   const skip = (page - 1) * limit;
 
-  const files = await File
+  let files = await File
     .find(findQuery)
     .sort(sortByQuery)
     .skip(skip)
     .limit(limit)
     .select(viewFileFields.join(' '))
     .catch(() => []);
+
+  // get pre-signed urls for file images
+  // TODO: use cloudfront to cache images and get presigned urls from cloudfront not s3
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    files = await Promise.all(files.map(async file => {
+      const imageUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: `${file._id}/image.png`,
+      }), { expiresIn: 60 * 60 });
+      return { ...file.toObject(), imageUrl };
+    }));
+  }
 
   res.json({ files });
 }
@@ -141,6 +153,14 @@ async function getFileToView (req, res) {
     return;
   }
 
+  // get pre-signed url for file
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    file.imageUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: `${file._id}/image.png`,
+    }), { expiresIn: 60 * 60 });
+  }
+
   const pickedFile = _.pick(file, viewFileFieldsFull);
   res.json({ file: pickedFile });
 }
@@ -168,6 +188,7 @@ async function getFileToEdit (req, res) {
   const pickedFile = _.pick(file, editFileFields);
   const signedUrls = {};
 
+  // TODO: use cloudfront to cache images and get presigned urls from cloudfront not s3
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
     // get presigned urls for all layers
     async function traverseLayer (layer) {

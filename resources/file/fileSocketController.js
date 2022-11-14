@@ -12,7 +12,7 @@ function onLayerPosition (socket, data) {
 async function onLayerUpdates (socket, data) {
   const fileId = getSocketFileId(socket);
   if (!fileId) handleSocketError('Socket is not editing a file');
-  const { newRootLayer, canvasUpdates, layerIds } = data;
+  const { newRootLayer, canvasUpdates, layerIds, newImage } = data;
   // console.log(data);
 
   const file = await File.findById(fileId).catch(() => null);
@@ -57,6 +57,20 @@ async function onLayerUpdates (socket, data) {
     await File.findByIdAndUpdate(fileId, { layerIds }, { runValidators: true, new: true }).catch((err) => handleSocketError(err));
     // console.log('updated file layerIds');
   }
+
+  // update file image
+  if (newImage) {
+    const key = `${fileId}/image.png`;
+    const params = {
+      Bucket: 'tiletogether-file-data-bucket',
+      Key: key,
+      Body: newImage,
+    };
+    const command = new PutObjectCommand(params);
+    await s3Client.send(command).catch((err) => handleSocketError(err));
+    // console.log(`saved image into s3 bucket with key ${key}`);
+  }
+
   socket.emit('changesSaved', { fileId });
 }
 

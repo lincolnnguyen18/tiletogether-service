@@ -8,8 +8,8 @@ const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals'
 const tileDimensions = [4, 8, 16, 32, 64];
 
 const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width', 'layerIds'];
-const viewFileFields = ['id', 'authorUsername', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'views'];
-const viewFileFieldsFull = ['id', 'authorUsername', 'likes', 'likeCount', 'comments', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'description', 'views'];
+const viewFileFields = ['id', 'authorUsername', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'views', 'imageUrl'];
+const viewFileFieldsFull = ['id', 'authorUsername', 'likes', 'likeCount', 'comments', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'description', 'views', 'imageUrl'];
 
 const layerSchema = Schema({
   name: { type: String, required: true },

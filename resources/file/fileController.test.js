@@ -2,7 +2,7 @@ const { setupApp, teardownApp, apiClient } = require('../../utils/testingUtils')
 const { app } = require('../../app');
 const mongoose = require('mongoose');
 const { User } = require('../user/userSchema');
-const { File, editFileFields, viewFileFields, Layer, tags, viewFileFieldsFull } = require('./fileSchema');
+const { File, editFileFields, Layer, tags, viewFileFieldsFull } = require('./fileSchema');
 const _ = require('lodash');
 
 let server;
@@ -72,12 +72,8 @@ describe('Connect to MongoDB', () => {
       test('status 200', async () => {
         const validFile = await File.newTestFile(user.username);
         const res = await apiClient.post('/api/files', validFile, apiClientConfig);
-        const fileInDb = await File.findById(res.data.file.id);
+        const fileInDb = await File.findById(res.data.fileId);
         expect(fileInDb).not.toBe(null);
-
-        const fileFields = Object.keys(res.data.file);
-        const difference = _.difference(editFileFields, fileFields);
-        expect(difference).toEqual([]);
       });
 
       test('status 400', async () => {
@@ -91,13 +87,12 @@ describe('Connect to MongoDB', () => {
 
     describe('delete a file', () => {
       test('status 200', async () => {
-        const file = await File.newTestFile(user.username);
+        let file = await File.newTestFile(user.username);
         const fileInDb = await File.create(file);
 
-        const res = await apiClient.delete(`/api/files/${fileInDb._id}`, apiClientConfig);
-        const fileFields = Object.keys(res.data.file);
-        const difference = _.difference(viewFileFields, fileFields);
-        expect(difference).toEqual([]);
+        await apiClient.delete(`/api/files/${fileInDb._id}`, apiClientConfig);
+        file = await File.findById(fileInDb._id);
+        expect(file).toBe(null);
       });
 
       test('status 404', async () => {
@@ -275,7 +270,9 @@ describe('Connect to MongoDB', () => {
         const res = await apiClient.get(`/api/files/${validFileId}`, apiClientConfig);
 
         const fileFields = Object.keys(res.data.file);
-        const difference = _.difference(viewFileFieldsFull, fileFields);
+        // remove imageUrl from viewFileFieldsFull (since not available in test env)
+        const viewFileFieldsFull2 = _.without(viewFileFieldsFull, 'imageUrl');
+        const difference = _.difference(viewFileFieldsFull2, fileFields);
         expect(difference).toEqual([]);
       });
 

@@ -1,9 +1,12 @@
 const express = require('express');
 const { identifyIfLoggedIn, isLoggedIn } = require('../user/userMiddleWare');
-const { File, viewFileFieldsFull, editFileFields, viewFileFields } = require('./fileSchema');
+const { File, viewFileFieldsFull, editFileFields, viewFileFields, Layer } = require('./fileSchema');
 const { handleError, mapErrors } = require('../../utils/errorUtils');
 const _ = require('lodash');
 const { User } = require('../user/userSchema');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { s3Client } = require('../../utils/s3Utils');
+const { GetObjectCommand } = require('@aws-sdk/client-s3');
 
 const FileRouter = express.Router();
 
@@ -90,13 +93,25 @@ async function getFiles (req, res) {
   page = page == null ? 1 : parseInt(page);
   const skip = (page - 1) * limit;
 
-  const files = await File
+  let files = await File
     .find(findQuery)
     .sort(sortByQuery)
     .skip(skip)
     .limit(limit)
     .select(viewFileFields.join(' '))
     .catch(() => []);
+
+  // get pre-signed urls for file images
+  // TODO: use cloudfront to cache images and get presigned urls from cloudfront not s3
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    files = await Promise.all(files.map(async file => {
+      const imageUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: `${file._id}/image.png`,
+      }), { expiresIn: 60 * 60 });
+      return { ...file.toObject(), imageUrl };
+    }));
+  }
 
   res.json({ files });
 }
@@ -138,6 +153,14 @@ async function getFileToView (req, res) {
     return;
   }
 
+  // get pre-signed url for file
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    file.imageUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: `${file._id}/image.png`,
+    }), { expiresIn: 60 * 60 });
+  }
+
   const pickedFile = _.pick(file, viewFileFieldsFull);
   res.json({ file: pickedFile });
 }
@@ -163,11 +186,54 @@ async function getFileToEdit (req, res) {
   }
 
   const pickedFile = _.pick(file, editFileFields);
-  res.json({ file: pickedFile });
+  const signedUrls = {};
+
+  // TODO: use cloudfront to cache images and get presigned urls from cloudfront not s3
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    // get presigned urls for all layers
+    async function traverseLayer (layer) {
+      // console.log('traversing layer', layer._id);
+      const key = `${file._id}/${layer._id}.png`;
+      // console.log('key', key);
+
+      if (layer.type === 'layer') {
+        const command = new GetObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: key,
+        });
+        signedUrls[layer._id] = await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 });
+        // console.log('got url', signedUrls[layer._id]);
+        // console.log('signedUrls', signedUrls);
+      } else if (layer.layers != null) {
+        // traverse children and await for all of them
+        await Promise.all(layer.layers.map(traverseLayer));
+      }
+    }
+    await traverseLayer(pickedFile.rootLayer);
+    // console.log('signedUrls', signedUrls);
+  }
+
+  res.json({ file: pickedFile, signedUrls });
 }
 
 async function postFile (req, res) {
   let file = req.body;
+
+  // check if width * tileDimension or height * tileDimension is greater than 10,000 pixels
+  const { width, height, tileDimension } = file;
+  const errors = {};
+  if (width != null && tileDimension != null) {
+    if (width * tileDimension > 10000) {
+      errors.width = 'Width cannot be greater than 10,000 pixels';
+    }
+    if (height * tileDimension > 10000) {
+      errors.height = 'Height cannot be greater than 10,000 pixels';
+    }
+  }
+  if (Object.keys(errors).length > 0) {
+    handleError(res, 400, errors);
+    return;
+  }
 
   file.authorUsername = req.user.username;
   file = new File(file);
@@ -178,8 +244,11 @@ async function postFile (req, res) {
     return;
   }
 
-  const pickedFile = _.pick(file, editFileFields);
-  res.json({ message: 'File created', file: pickedFile });
+  // create rootLayer
+  const rootLayer = await Layer.create({ name: 'root_layer', type: 'group' });
+  const updatedFile = await File.findByIdAndUpdate(createRes._id, { rootLayer: rootLayer._id }, { new: true }).catch(() => null);
+
+  res.json({ message: 'File created', fileId: updatedFile._id });
 }
 
 async function patchFile (req, res) {
@@ -228,6 +297,22 @@ async function patchFile (req, res) {
     }
   }
 
+  // check if width * tileDimension or height * tileDimension is greater than 10,000 pixels
+  const { width, height, tileDimension } = req.body;
+  const errors = {};
+  if (width != null && tileDimension != null) {
+    if (width * tileDimension > 10000) {
+      errors.width = 'Width cannot be greater than 10,000 pixels';
+    }
+    if (height * tileDimension > 10000) {
+      errors.height = 'Height cannot be greater than 10,000 pixels';
+    }
+  }
+  if (Object.keys(errors).length > 0) {
+    handleError(res, 400, errors);
+    return;
+  }
+
   if (req.body.publishedAt != null) {
     if (file.authorUsername !== req.user.username) {
       handleError(res, 401, 'You cannot change the publishedAt field unless you are the original author');
@@ -241,6 +326,9 @@ async function patchFile (req, res) {
       }
     }
   }
+
+  const allowabledPatchFields = ['name', 'width', 'height', 'tileDimension', 'sharedWith', 'publishedAt'];
+  req.body = _.pick(req.body, allowabledPatchFields);
 
   // update file updatedAt field
   req.body.updatedAt = Date.now();

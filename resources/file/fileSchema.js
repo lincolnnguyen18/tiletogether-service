@@ -7,27 +7,32 @@ const { createRandomTree } = require('../../utils/treeUtils');
 const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals', 'plants', 'food', 'weapons', 'misc'];
 const tileDimensions = [4, 8, 16, 32, 64];
 
-const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width'];
-const viewFileFields = ['id', 'authorUsername', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'views'];
-const viewFileFieldsFull = ['id', 'authorUsername', 'likes', 'likeCount', 'comments', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'description', 'views'];
+const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width', 'layerIds'];
+const viewFileFields = ['id', 'authorUsername', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'views', 'imageUrl'];
+const viewFileFieldsFull = ['id', 'authorUsername', 'likes', 'likeCount', 'comments', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'description', 'views', 'imageUrl'];
 
 const layerSchema = Schema({
   name: { type: String, required: true },
   opacity: { type: Number, default: 1, required: true, min: 0, max: 1 },
-  position: new Schema({
-    x: { type: Number, default: 0, required: true },
-    y: { type: Number, default: 0, required: true },
-  }),
-  properties: new Schema({
+  position: {
+    type: {
+      x: { type: Number, default: 0, required: true },
+      y: { type: Number, default: 0, required: true },
+    },
+    required: true,
+    default: { x: 0, y: 0 },
+  },
+  // only used by maps
+  properties: [new Schema({
     name: { type: String, required: true },
     type: { type: String, required: true },
     value: { type: String, required: true },
-  }),
-  tiles: new Schema({
+  })],
+  // only used by maps
+  tiles: [new Schema({
     index: { type: Number, required: true },
     tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
-  }),
-  tilesetLayerUrl: { type: String },
+  })],
   type: { type: String, required: true, enum: ['layer', 'group'] },
   visible: { type: Boolean, default: true, required: true },
   // set _id manually to allow client side to set id later on (when creating new layers)
@@ -50,10 +55,18 @@ const fileSchema = Schema({
   width: { type: Number, min: 1, required: [true, 'Width is required'] },
   height: { type: Number, min: 1, required: [true, 'Height is required'] },
   rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
-  tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
+  // only used by tilesets
+  layerIds: [String],
+  // only used by maps
+  tilesets: [new Schema({
+    file: { type: Schema.Types.ObjectId, ref: 'File', required: true },
+    // make copy of tileset image url so that map isn't affected if the tileset is updated or deleted
+    imageUrl: { type: String, required: true },
+    name: { type: String, required: true },
+  })],
   imageUrl: String,
   views: { type: Number, min: 0, required: true, default: 0 },
-  tags: { type: String, required: true, index: true },
+  tags: { type: String, index: true },
   publishedAt: { type: Date, sparse: true },
   createdAt: { type: Date, default: Date.now, required: true },
   updatedAt: { type: Date, default: Date.now, required: true },
@@ -78,12 +91,12 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
   const createdAt = faker.date.past();
   const updatedAt = faker.date.between(createdAt, Date.now());
   const tileDimension = _.sample(tileDimensions);
-  const width = _.random(1, 10);
-  const height = _.random(1, 10);
+  const width = _.random(50, 100);
+  const height = _.random(50, 100);
   const type = _.sample(['map', 'tileset']);
   const rootLayer = await Layer.create({ name: 'test_root_layer', type: 'group' });
 
-  rootLayer.layers = createRandomTree(3);
+  rootLayer.layers = createRandomTree(3, width * tileDimension, height * tileDimension);
   await rootLayer.save();
 
   const likes = _

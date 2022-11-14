@@ -4,6 +4,11 @@ function getSocketFileId (socket) {
   return rooms[1];
 }
 
+function handleSocketError (err) {
+  console.log(err);
+}
+
 module.exports = {
   getSocketFileId,
+  handleSocketError,
 };

@@ -6,13 +6,8 @@ const { FileRouter } = require('./resources/file/fileController.js');
 const { mapKeysToCamelCase } = require('./utils/stringUtils');
 const { Server } = require('socket.io');
 const http = require('http');
-const {
-  onLayerPosition,
-  handleDisconnect,
-  emitChangesSaved,
-  onJoinRoom,
-  onLeaveRoom,
-} = require('./resources/user/userSocketController');
+const { onJoinRoom, onLeaveRoom, handleDisconnect } = require('./resources/user/userSocketController');
+const { onLayerPosition, onLayerUpdates } = require('./resources/file/fileSocketController');
 
 dotenv.config({ path: `./.env.${process.env.NODE_ENV}` });
 
@@ -44,13 +39,17 @@ io.on('connection', (socket) => {
   console.log('a user connected');
 
   // Event listeners
+  // user events
   socket.on('joinRoom', (data) => onJoinRoom(socket, data));
   socket.on('leaveRoom', (data) => onLeaveRoom(socket, data));
-  socket.on('layerPosition', (data) => onLayerPosition(socket, data));
   socket.on('disconnect', () => handleDisconnect());
+  // file events
+  socket.on('layerPosition', (data) => onLayerPosition(socket, data));
+  socket.on('layerUpdates', (data) => onLayerUpdates(socket, data));
 
   // Emitters
-  emitChangesSaved(socket);
+  // file emitters
+  // emitChangesSaved(socket);
 });
 
 module.exports = { app: server };

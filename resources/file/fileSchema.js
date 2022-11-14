@@ -2,12 +2,12 @@ const { Schema } = require('mongoose');
 const { faker } = require('@faker-js/faker');
 const _ = require('lodash');
 const mongoose = require('mongoose');
-const { createRandomTree } = require('../../utils/treeUtils');
+const { createRandomTree, createMapLayers, randomImageURL } = require('../../utils/treeUtils');
 
 const tags = ['furniture', 'trees', 'buildings', 'vehicles', 'people', 'animals', 'plants', 'food', 'weapons', 'misc'];
 const tileDimensions = [4, 8, 16, 32, 64];
 
-const editFileFields = ['id', 'height', 'name', 'rootLayer', 'sharedWith', 'tags', 'tileDimension', 'tilesets', 'type', 'publishedAt', 'width'];
+const editFileFields = ['id', 'name', 'tileDimension', 'width', 'height', 'rootLayer', 'tilesets', 'startIndices', 'imageUrl', 'sharedWith', 'tags', 'type', 'publishedAt'];
 const viewFileFields = ['id', 'authorUsername', 'likeCount', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'views'];
 const viewFileFieldsFull = ['id', 'authorUsername', 'likes', 'likeCount', 'comments', 'commentCount', 'height', 'name', 'tags', 'tileDimension', 'tilesets', 'type', 'updatedAt', 'width', 'publishedAt', 'likes', 'description', 'views'];
 
@@ -18,15 +18,12 @@ const layerSchema = Schema({
     x: { type: Number, default: 0, required: true },
     y: { type: Number, default: 0, required: true },
   }),
-  properties: new Schema({
+  properties: [new Schema({
     name: { type: String, required: true },
     type: { type: String, required: true },
     value: { type: String, required: true },
-  }),
-  tiles: new Schema({
-    index: { type: Number, required: true },
-    tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
-  }),
+  })],
+  tiles: { type: [Number], required: true },
   tilesetLayerUrl: { type: String },
   type: { type: String, required: true, enum: ['layer', 'group'] },
   visible: { type: Boolean, default: true, required: true },
@@ -51,6 +48,7 @@ const fileSchema = Schema({
   height: { type: Number, min: 1, required: [true, 'Height is required'] },
   rootLayer: { type: Schema.Types.ObjectId, ref: 'Layer' },
   tilesets: [{ type: Schema.Types.ObjectId, ref: 'File' }],
+  startIndices: { type: [Number], required: false },
   imageUrl: String,
   views: { type: Number, min: 0, required: true, default: 0 },
   tags: { type: String, required: true, index: true },
@@ -74,7 +72,7 @@ const fileSchema = Schema({
 
 fileSchema.index({ authorUsername: 'text', name: 'text', tags: 'text' });
 
-fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
+fileSchema.statics.newTestFile = async function (authorUsername, users = [], tilesets = []) {
   const createdAt = faker.date.past();
   const updatedAt = faker.date.between(createdAt, Date.now());
   const tileDimension = _.sample(tileDimensions);
@@ -83,7 +81,14 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
   const type = _.sample(['map', 'tileset']);
   const rootLayer = await Layer.create({ name: 'test_root_layer', type: 'group' });
 
-  rootLayer.layers = createRandomTree(3);
+  const startIndices = [];
+  const lastTileIndex = tilesets.reduce((sum, t) => {
+    startIndices.push(sum + 1);// first tile index start from 1
+    return sum + t.width * t.height;
+  }, 0);
+  if (startIndices.length > 0) startIndices[0] = 1;
+
+  rootLayer.layers = type === 'map' ? createMapLayers(width, height, lastTileIndex) : createRandomTree(3);
   await rootLayer.save();
 
   const likes = _
@@ -113,6 +118,9 @@ fileSchema.statics.newTestFile = async function (authorUsername, users = []) {
     createdAt,
     updatedAt,
     rootLayer: rootLayer._id,
+    tilesets: tilesets.map(t => t._id),
+    startIndices,
+    imageUrl: randomImageURL(),
     type,
     publishedAt: _.sample([null, faker.date.between(createdAt, updatedAt)]),
     views: _.random(0, 100),

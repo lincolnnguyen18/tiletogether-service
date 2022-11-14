@@ -31,10 +31,12 @@ async function main () {
   users.push(testUser);
 
   // Create files
+  const tilesets = [];
   for (let i = 0; i < numFiles; i++) {
     const randomUser = _.sample(users);
-    const file = await File.newTestFile(randomUser.username, users);
+    const file = await File.newTestFile(randomUser.username, users, tilesets);
     const fileInstance = await File.create(file);
+    if (tilesets.length < 5 && fileInstance.type === 'tileset') tilesets.push(fileInstance);
     files.push(fileInstance);
   }
 

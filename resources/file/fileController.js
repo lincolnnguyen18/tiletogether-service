@@ -143,7 +143,7 @@ async function getFileToView (req, res) {
 }
 
 async function getFileToEdit (req, res) {
-  const file = await File.findById(req.params.id).populate('rootLayer').exec().catch(() => null);
+  const file = await File.findById(req.params.id).populate('rootLayer').populate('tilesets').exec().catch(() => null);
   if (file == null) {
     handleError(res, 404);
     return;
@@ -245,7 +245,7 @@ async function patchFile (req, res) {
   // update file updatedAt field
   req.body.updatedAt = Date.now();
 
-  const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).catch(err => err);
+  const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).populate('rootLayer').populate('tilesets').exec().catch(err => err);
   if (updateRes.errors != null) {
     handleError(res, 400, mapErrors(updateRes.errors));
     return;

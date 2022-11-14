@@ -1,10 +1,15 @@
 const _ = require('lodash');
 const { faker } = require('@faker-js/faker');
 
+const imageUrls = _.range(1, 30).map((i) => `/mock-layer-images/${i}.png`);
+
+function randomImageURL () {
+  return _.sample(imageUrls);
+}
+
 function randomLayer () {
   const type = _.sample(['group', 'layer']);
-  const imageUrls = _.range(1, 30).map((i) => `/mock-layer-images/${i}.png`);
-  const imageUrl = _.sample(imageUrls);
+  const imageUrl = randomImageURL();
   return {
     type,
     name: faker.lorem.word(),
@@ -49,4 +54,25 @@ function createRandomTree (maxDepth) {
   return layers;
 }
 
-module.exports = { createRandomTree };
+function randomMapLayer (width, height, lastTileIndex) {
+  const type = 'layer';
+  return {
+    type,
+    name: faker.lorem.word(),
+    tiles: Array.from({ length: width * height }, () => _.random(0, lastTileIndex)),
+  };
+}
+
+function createMapLayers (width, height, lastTileIndex) {
+  const layers = [];
+  const layerCount = _.random(3, 5);
+
+  // create layers
+  for (let i = 0; i < layerCount; i++) {
+    layers.push(randomMapLayer(width, height, lastTileIndex));
+  }
+
+  return layers;
+}
+
+module.exports = { createRandomTree, createMapLayers, randomImageURL };

@@ -6,7 +6,7 @@ const _ = require('lodash');
 const { User } = require('../user/userSchema');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { s3Client } = require('../../utils/s3Utils');
-const { GetObjectCommand } = require('@aws-sdk/client-s3');
+const { GetObjectCommand, CopyObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 const FileRouter = express.Router();
 
@@ -190,27 +190,44 @@ async function getFileToEdit (req, res) {
 
   // TODO: use cloudfront to cache images and get presigned urls from cloudfront not s3
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    // for tilesets only
     // get presigned urls for all layers
-    async function traverseLayer (layer) {
-      // console.log('traversing layer', layer._id);
-      const key = `${file._id}/${layer._id}.png`;
-      // console.log('key', key);
+    if (file.type === 'tileset') {
+      async function traverseLayer (layer) {
+        // console.log('traversing layer', layer._id);
+        const key = `${file._id}/${layer._id}.png`;
+        // console.log('key', key);
 
-      if (layer.type === 'layer') {
+        if (layer.type === 'layer') {
+          const command = new GetObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: key,
+          });
+          signedUrls[layer._id] = await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 });
+          // console.log('got url', signedUrls[layer._id]);
+          // console.log('signedUrls', signedUrls);
+        } else if (layer.layers != null) {
+          // traverse children and await for all of them
+          await Promise.all(layer.layers.map(traverseLayer));
+        }
+      }
+      await traverseLayer(pickedFile.rootLayer);
+      // console.log('signedUrls', signedUrls);
+    }
+
+    // for maps only
+    // get presigned url for all tilesets
+    if (file.type === 'map') {
+      await Promise.all(pickedFile.tilesets.map(async tileset => {
+        const key = `${file._id}/${tileset.file}.png`;
+        console.log('key', key);
         const command = new GetObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET,
           Key: key,
         });
-        signedUrls[layer._id] = await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 });
-        // console.log('got url', signedUrls[layer._id]);
-        // console.log('signedUrls', signedUrls);
-      } else if (layer.layers != null) {
-        // traverse children and await for all of them
-        await Promise.all(layer.layers.map(traverseLayer));
-      }
+        signedUrls[tileset.file] = await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 });
+      }));
     }
-    await traverseLayer(pickedFile.rootLayer);
-    // console.log('signedUrls', signedUrls);
   }
 
   res.json({ file: pickedFile, signedUrls });
@@ -327,7 +344,95 @@ async function patchFile (req, res) {
     }
   }
 
-  const allowabledPatchFields = ['name', 'width', 'height', 'tileDimension', 'sharedWith', 'publishedAt'];
+  let newTilesets;
+  if (req.body.tilesets != null) {
+    if (file.authorUsername !== req.user.username) {
+      handleError(res, 401, 'You cannot change the tilesets field unless you are the original author');
+      return;
+    }
+
+    // verify all tilesets are unique (fileIds are unique)
+    const isUnique = _.uniq(req.body.tilesets.map(tileset => tileset.file)).length === req.body.tilesets.length;
+    if (!isUnique) {
+      handleError(res, 400, { tilesets: 'Tileset already added' });
+      return;
+    }
+
+    // get difference between existing and new tilesets to determine which tilesets are new
+    const oldTilesets = file.tilesets.map(tileset => tileset.file.toString());
+    const givenTilesets = req.body.tilesets.map(tileset => tileset.file);
+    const addedTilesets = _.difference(givenTilesets, oldTilesets);
+
+    console.log('addTilesets', addedTilesets);
+
+    // verify all new tilesets exist
+    const tilesetsExist = await File.countDocuments({ _id: { $in: addedTilesets }, type: 'tileset' }).catch(() => false) === addedTilesets.length;
+    if (!tilesetsExist) {
+      handleError(res, 400, { tilesets: 'Invalid tileset' });
+      return;
+    }
+
+    // determine deleted tilesets and delete them from s3
+    const deletedTilesets = _.difference(oldTilesets, givenTilesets);
+    console.log('deleteTilesets', deletedTilesets);
+    await Promise.all(deletedTilesets.map(async tilesetId => {
+      const command = new DeleteObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: `${file._id}/${tilesetId}.png`,
+      });
+      await s3Client.send(command);
+    }));
+
+    // for each tileset if name not given, use tileset name
+    // also add imageUrl to tileset by duplicating the image in s3 and assigning a key of
+    // maps/<fileId>/<tilesetFileId>.png
+    newTilesets = await Promise.all(req.body.tilesets.map(async tileset => {
+      const tilesetFile = await File.findById(tileset.file).catch(() => null);
+      if (tilesetFile == null) {
+        throw new Error('Invalid tileset');
+      }
+
+      // if new tileset, duplicate image in s3
+      const key = `${file._id}/${tilesetFile._id}.png`;
+      if (addedTilesets.includes(tilesetFile._id.toString())) {
+        console.log('newKey', key);
+        // use CopyObject to duplicate the tileset image in s3
+        const copyCommand = new CopyObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET,
+          CopySource: `${process.env.AWS_S3_BUCKET}/${tilesetFile._id}/image.png`,
+          Key: key,
+        });
+        await s3Client.send(copyCommand);
+        console.log(`Copied ${tilesetFile._id}/image.png to ${key}`);
+      }
+
+      // get signed url for new tileset image
+      const imageUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: key,
+      }), { expiresIn: 10 });
+
+      return {
+        file: tileset.file,
+        imageUrl,
+        name: tileset.name || tilesetFile.name,
+      };
+    }));
+
+    console.log('newTilesets', newTilesets);
+  }
+
+  // set req.body.tilesets to newTilesets but without imageUrl field (since this will be generated on demand using presigned urls)
+  if (newTilesets != null) {
+    req.body.tilesets = newTilesets.map(tileset => _.omit(tileset, 'imageUrl'));
+  }
+
+  let allowabledPatchFields;
+  if (req.body.type === 'tileset') {
+    allowabledPatchFields = ['name', 'width', 'height', 'tileDimension', 'sharedWith', 'publishedAt'];
+  } else {
+    allowabledPatchFields = ['name', 'width', 'height', 'sharedWith', 'publishedAt', 'tilesets'];
+  }
   req.body = _.pick(req.body, allowabledPatchFields);
 
   // update file updatedAt field
@@ -340,6 +445,13 @@ async function patchFile (req, res) {
   }
 
   const pickedFile = _.pick(updateRes, editFileFields);
+  // if newTilesets is defined, add imageUrl field to each tileset
+  if (newTilesets != null) {
+    pickedFile.tilesets = pickedFile.tilesets.map((tileset, i) => ({
+      ...tileset.toObject(),
+      imageUrl: newTilesets[i].imageUrl,
+    }));
+  }
   res.json({ message: 'File updated', file: pickedFile });
 }
 

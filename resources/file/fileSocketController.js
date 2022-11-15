@@ -24,7 +24,7 @@ async function onLayerUpdates (socket, data) {
     const arrayBuffer = canvasUpdates[layerId];
     const key = `${fileId}/${layerId}.png`;
     const params = {
-      Bucket: 'tiletogether-file-data-bucket',
+      Bucket: process.env.AWS_S3_BUCKET,
       Key: key,
       Body: arrayBuffer,
     };
@@ -41,7 +41,7 @@ async function onLayerUpdates (socket, data) {
   for (const layerId of deletedLayerIds) {
     const key = `${fileId}/${layerId}.png`;
     const params = {
-      Bucket: 'tiletogether-file-data-bucket',
+      Bucket: process.env.AWS_S3_BUCKET,
       Key: key,
     };
     const command = new DeleteObjectCommand(params);
@@ -54,7 +54,10 @@ async function onLayerUpdates (socket, data) {
   if (_.isEqual(currentLayerIds, layerIds)) {
     // console.log('no changes to layerIds');
   } else {
-    await File.findByIdAndUpdate(fileId, { layerIds }, { runValidators: true, new: true }).catch((err) => handleSocketError(err));
+    await File.findByIdAndUpdate(fileId, {
+      layerIds,
+      updatedAt: Date.now(),
+    }, { runValidators: true, new: true }).catch((err) => handleSocketError(err));
     // console.log('updated file layerIds');
   }
 
@@ -62,7 +65,7 @@ async function onLayerUpdates (socket, data) {
   if (newImage) {
     const key = `${fileId}/image.png`;
     const params = {
-      Bucket: 'tiletogether-file-data-bucket',
+      Bucket: process.env.AWS_S3_BUCKET,
       Key: key,
       Body: newImage,
     };

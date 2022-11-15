@@ -81,8 +81,8 @@ UserSchema.statics.newTestUser = function () {
 };
 
 UserSchema.statics.deleteTestUsers = async function () {
-  // delete all users with username ending in _test_user or username == test
-  return this.deleteMany({ username: { $in: ['test', /_test_user$/] } });
+  // delete all users with username ending in _test_user
+  return this.deleteMany({ username: { $in: [/_test_user$/] } });
 };
 
 const User = mongoose.model('User', UserSchema);

@@ -30,7 +30,7 @@ describe('Connect to MongoDB', () => {
 
   describe('User API lets user', () => {
     test('register', async () => {
-      const res = (await apiClient.post('/api/users', user)).data;
+      const res = (await apiClient.post('/users', user)).data;
       expect(await User.findOne({ username: user.username })).not.toBeNull();
       expect(res.token).not.toBeNull();
       expect(res.username).toBe(user.username);
@@ -39,7 +39,7 @@ describe('Connect to MongoDB', () => {
 
     test('login and get token', async () => {
       await User.create(user);
-      const res = (await apiClient.get('/api/users', {
+      const res = (await apiClient.get('/users', {
         params: {
           email: user.email,
           password: user.password,
@@ -53,7 +53,7 @@ describe('Connect to MongoDB', () => {
     test('login using token', async () => {
       const userObject = await User.create(user);
       const token = userObject.generateAuthToken();
-      const res = (await apiClient.get('/api/users', {
+      const res = (await apiClient.get('/users', {
         headers: {
           withCredentials: true,
           Authorization: `Bearer ${token}`,
@@ -64,7 +64,7 @@ describe('Connect to MongoDB', () => {
 
     test('deregister', async () => {
       await User.create(user);
-      await apiClient.delete('/api/users', {
+      await apiClient.delete('/users', {
         params: {
           email: user.email,
           password: user.password,
@@ -78,7 +78,7 @@ describe('Connect to MongoDB', () => {
   describe('User API does not let user', () => {
     test('deregister non-existent user', async () => {
       try {
-        await apiClient.delete('/api/users', {
+        await apiClient.delete('/users', {
           params: {
             email: user.email,
             password: user.password,
@@ -93,7 +93,7 @@ describe('Connect to MongoDB', () => {
     test('login with invalid credentials', async () => {
       await User.create(user);
       try {
-        await apiClient.get('/api/users', {
+        await apiClient.get('/users', {
           params: {
             email: user.email,
             password: 'invalid_password',
@@ -107,7 +107,7 @@ describe('Connect to MongoDB', () => {
 
     test('login using invalid token', async () => {
       try {
-        await apiClient.get('/api/users', {
+        await apiClient.get('/users', {
           headers: {
             withCredentials: true,
             Authorization: 'Bearer invalid_token',
@@ -127,7 +127,7 @@ describe('Connect to MongoDB', () => {
     ])('register with empty %s', async (field, value) => {
       user[field] = value;
       try {
-        await apiClient.post('/api/users', user);
+        await apiClient.post('/users', user);
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
@@ -137,7 +137,7 @@ describe('Connect to MongoDB', () => {
     test('register with mismatched passwords', async () => {
       user.confirmPassword = 'mismatching_password';
       try {
-        await apiClient.post('/api/users', user);
+        await apiClient.post('/users', user);
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
@@ -148,7 +148,7 @@ describe('Connect to MongoDB', () => {
     test('register with invalid email', async () => {
       user.email = 'invalid_email';
       try {
-        await apiClient.post('/api/users', user);
+        await apiClient.post('/users', user);
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
@@ -159,7 +159,7 @@ describe('Connect to MongoDB', () => {
     test('register with existing username and email', async () => {
       await User.create(user);
       try {
-        await apiClient.post('/api/users', user);
+        await apiClient.post('/users', user);
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
@@ -173,7 +173,7 @@ describe('Connect to MongoDB', () => {
     test('register with username containing invalid characters', async () => {
       user.username = 'invalid username!';
       try {
-        await apiClient.post('/api/users', user);
+        await apiClient.post('/users', user);
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);
@@ -184,7 +184,7 @@ describe('Connect to MongoDB', () => {
     test('register with username with less than 3 characters', async () => {
       user.username = 'ab';
       try {
-        await apiClient.post('/api/users', user);
+        await apiClient.post('/users', user);
         expect(true).toBe(false);
       } catch (err) {
         expect(err.response.status).toBe(400);

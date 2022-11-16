@@ -13,8 +13,8 @@ describe('App', () => {
     await teardownApp(server, mongoose);
   });
 
-  test('returns 200 on /api/health', async () => {
-    const response = await apiClient.get('/api/health');
+  test('returns 200 on /health', async () => {
+    const response = await apiClient.get('/health');
     expect(response.status).toBe(200);
   });
 });

@@ -71,15 +71,17 @@ describe('Connect to MongoDB', () => {
     describe('create a file', () => {
       test('status 200', async () => {
         const validFile = await File.newTestFile(user.username);
-        const res = await apiClient.post('/api/files', validFile, apiClientConfig);
+        const res = await apiClient.post('/files', validFile, apiClientConfig);
         const fileInDb = await File.findById(res.data.fileId);
         expect(fileInDb).not.toBe(null);
+        await File.findByIdAndDelete(res.data.fileId);
+        await Layer.findByIdAndDelete(fileInDb.rootLayer._id);
       });
 
       test('status 400', async () => {
         const invalidFile = await File.newTestFile(user.username);
         invalidFile.name = '';
-        const res400 = await apiClient.post('/api/files', invalidFile, apiClientConfig).catch(err => err.response);
+        const res400 = await apiClient.post('/files', invalidFile, apiClientConfig).catch(err => err.response);
         expect(res400.status).toBe(400);
         expect(res400.data.error.name).toBe('Name is required');
       });
@@ -90,13 +92,13 @@ describe('Connect to MongoDB', () => {
         let file = await File.newTestFile(user.username);
         const fileInDb = await File.create(file);
 
-        await apiClient.delete(`/api/files/${fileInDb._id}`, apiClientConfig);
+        await apiClient.delete(`/files/${fileInDb._id}`, apiClientConfig);
         file = await File.findById(fileInDb._id);
         expect(file).toBe(null);
       });
 
       test('status 404', async () => {
-        const error = await apiClient.delete('/api/files/1234', apiClientConfig).catch(err => err.response);
+        const error = await apiClient.delete('/files/1234', apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
     });
@@ -112,7 +114,7 @@ describe('Connect to MongoDB', () => {
 
       test('status 200', async () => {
         const likeCount = file.likeCount;
-        await apiClient.post(`/api/files/${validFileId}/like`, { liked: true }, apiClientConfig);
+        await apiClient.post(`/files/${validFileId}/like`, { liked: true }, apiClientConfig);
         file = await File.findById(validFileId);
 
         const likedFile = await File.findOne({ _id: file._id, 'likes.username': user.username });
@@ -125,7 +127,7 @@ describe('Connect to MongoDB', () => {
         file.likes.push({ username: user.username, createdAt: Date.now() });
         await file.save();
 
-        await apiClient.post(`/api/files/${validFileId}/like`, { liked: false }, apiClientConfig);
+        await apiClient.post(`/files/${validFileId}/like`, { liked: false }, apiClientConfig);
         file = await File.findById(validFileId);
 
         const unlikedFile = await File.findOne({ _id: file._id, 'likes.username': user.username });
@@ -135,7 +137,7 @@ describe('Connect to MongoDB', () => {
 
       test('status 404', async () => {
         const invalidFileId = 'abc';
-        const error = await apiClient.post(`/api/files/${invalidFileId}/like`, { liked: true }, apiClientConfig).catch(err => err.response);
+        const error = await apiClient.post(`/files/${invalidFileId}/like`, { liked: true }, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
     });
@@ -150,8 +152,8 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 200 for renaming', async () => {
-        const newName = 'new name';
-        await apiClient.patch(`/api/files/${validFileId}`, { name: newName }, apiClientConfig);
+        const newName = 'rename test file';
+        await apiClient.patch(`/files/${validFileId}`, { name: newName }, apiClientConfig);
         file = await File.findById(validFileId);
         expect(file.name).toBe(newName);
       });
@@ -161,7 +163,7 @@ describe('Connect to MongoDB', () => {
         newSharedWith = newSharedWith.map(u => u.username);
 
         expect(file.sharedWith.length).toBe(0);
-        await apiClient.patch(`/api/files/${validFileId}`, { sharedWith: newSharedWith }, apiClientConfig);
+        await apiClient.patch(`/files/${validFileId}`, { sharedWith: newSharedWith }, apiClientConfig);
         file = await File.findById(validFileId);
         expect(file.sharedWith.sort()).toEqual(newSharedWith.sort());
       });
@@ -172,7 +174,7 @@ describe('Connect to MongoDB', () => {
         file.publishedAt = null;
         await file.save();
 
-        await apiClient.patch(`/api/files/${validFileId}`, { publishedAt: true }, apiClientConfig);
+        await apiClient.patch(`/files/${validFileId}`, { publishedAt: true }, apiClientConfig);
         file = await File.findById(validFileId);
         expect(file.publishedAt).not.toBeNull();
       });
@@ -181,21 +183,21 @@ describe('Connect to MongoDB', () => {
         const newSharedWith = ['invalidUsername'];
 
         const sharedWithLength = file.sharedWith.length;
-        const error = await apiClient.patch(`/api/files/${validFileId}`, { sharedWith: newSharedWith }, apiClientConfig).catch(err => err.response);
+        const error = await apiClient.patch(`/files/${validFileId}`, { sharedWith: newSharedWith }, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(400);
         file = await File.findById(validFileId);
         expect(file.sharedWith.length).toBe(sharedWithLength);
       });
 
       test('status 400', async () => {
-        const res400 = await apiClient.patch(`/api/files/${validFileId}`, { name: '' }, apiClientConfig).catch(err => err.response);
+        const res400 = await apiClient.patch(`/files/${validFileId}`, { name: '' }, apiClientConfig).catch(err => err.response);
         expect(res400.status).toBe(400);
         expect(res400.data.error.name).toBe('Name is required');
       });
 
       test('status 404', async () => {
         const invalidFileId = 'abc';
-        const error = await apiClient.patch(`/api/files/${invalidFileId}`, { name: 'new name' }, apiClientConfig).catch(err => err.response);
+        const error = await apiClient.patch(`/files/${invalidFileId}`, { name: 'new name' }, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
     });
@@ -211,7 +213,7 @@ describe('Connect to MongoDB', () => {
 
       test('status 200', async () => {
         const commentCount = fileInstance.commentCount;
-        await apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
+        await apiClient.post(`/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
 
         const commentedFile = await File.findOne({ _id: validFileId, 'comments.username': user.username });
         expect(commentedFile).not.toBeNull();
@@ -220,7 +222,7 @@ describe('Connect to MongoDB', () => {
 
       test('status 404', async () => {
         const invalidFileId = 'abc';
-        const error = await apiClient.post(`/api/files/${invalidFileId}/comment`, { content: 'test comment' }, apiClientConfig).catch(err => err.response);
+        const error = await apiClient.post(`/files/${invalidFileId}/comment`, { content: 'test comment' }, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
     });
@@ -237,21 +239,21 @@ describe('Connect to MongoDB', () => {
       test('status 200', async () => {
         // test comment
         const commentCount = fileInstance.commentCount;
-        await apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
+        await apiClient.post(`/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
         const commentedFile = await File.findOne({ _id: validFileId, 'comments.username': user.username });
         expect(commentedFile).not.toBeNull();
         expect(commentedFile.commentCount).toBe(commentCount + 1);
 
         // test reply
         const comment = commentedFile.comments[commentCount];
-        await apiClient.post(`/api/files/${validFileId}/comment`, { content: 'test reply', parentId: comment._id }, apiClientConfig);
+        await apiClient.post(`/files/${validFileId}/comment`, { content: 'test reply', parentId: comment._id }, apiClientConfig);
         const repliedFile = await File.findOne({ _id: validFileId, 'comments.username': user.username });
         expect(repliedFile.commentCount).toBe(commentCount + 2);
       });
 
       test('status 404', async () => {
         const invalidFileId = 'abc';
-        const error = await apiClient.post(`/api/files/${invalidFileId}/reply`, { content: 'test comment' }, apiClientConfig).catch(err => err.response);
+        const error = await apiClient.post(`/files/${invalidFileId}/reply`, { content: 'test comment' }, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
     });
@@ -267,7 +269,7 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 200', async () => {
-        const res = await apiClient.get(`/api/files/${validFileId}`, apiClientConfig);
+        const res = await apiClient.get(`/files/${validFileId}`, apiClientConfig);
 
         const fileFields = Object.keys(res.data.file);
         // remove imageUrl from viewFileFieldsFull (since not available in test env)
@@ -278,7 +280,7 @@ describe('Connect to MongoDB', () => {
 
       test('status 404', async () => {
         const invalidFileId = 'abc';
-        const error = await apiClient.get(`/api/files/${invalidFileId}`, apiClientConfig).catch(err => err.response);
+        const error = await apiClient.get(`/files/${invalidFileId}`, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
     });
@@ -304,7 +306,7 @@ describe('Connect to MongoDB', () => {
 
       test('status 200', async () => {
         // db.files.find({ _id: ObjectId("63569bd9638fc94060324fdf"), $or: [ { authorUsername: 'car_test_user' }, { sharedWith: { $elemMatch: { $eq: 'car_test_user' } } } ] }).count() === 1
-        const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig);
+        const res = await apiClient.get(`/files/${validFileId}/edit`, apiClientConfig);
         const file = res.data.file;
 
         // this is testing to see if mongoose's populate() is working
@@ -317,24 +319,24 @@ describe('Connect to MongoDB', () => {
 
       test('status 404 for non-existent file', async () => {
         const invalidFileId = 'abc';
-        const error = await apiClient.get(`/api/files/${invalidFileId}/edit`, apiClientConfig).catch(err => err.response);
+        const error = await apiClient.get(`/files/${invalidFileId}/edit`, apiClientConfig).catch(err => err.response);
         expect(error.status).toBe(404);
       });
 
       test('status 403 for not logged in user', async () => {
-        const error = await apiClient.get(`/api/files/${validFileId}/edit`).catch(err => err.response);
+        const error = await apiClient.get(`/files/${validFileId}/edit`).catch(err => err.response);
         expect(error.status).toBe(403);
       });
 
       test('status 404 for not owner', async () => {
-        const error = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig2).catch(err => err.response);
+        const error = await apiClient.get(`/files/${validFileId}/edit`, apiClientConfig2).catch(err => err.response);
         expect(error.status).toBe(404);
       });
 
       test('status 200 for shared user', async () => {
         fileInstance.sharedWith.push(user2.username);
         await fileInstance.save();
-        const res = await apiClient.get(`/api/files/${validFileId}/edit`, apiClientConfig2);
+        const res = await apiClient.get(`/files/${validFileId}/edit`, apiClientConfig2);
 
         const fileFields = Object.keys(res.data.file);
         const difference = _.difference(editFileFields, fileFields);
@@ -352,9 +354,9 @@ describe('Connect to MongoDB', () => {
       const defaultPageLimit = 10;
 
       beforeAll(async () => {
-        await User.deleteMany({});
-        await File.deleteMany({});
-        await Layer.deleteMany({});
+        await User.deleteTestUsers();
+        await File.deleteTestFiles();
+        await Layer.deleteTestLayers();
 
         for (let i = 0; i < numUsers; i++) {
           const user = await User.create(User.newTestUser());
@@ -388,7 +390,7 @@ describe('Connect to MongoDB', () => {
 
         do {
           apiClientConfig.params.page = pageCount + 1;
-          const res = await apiClient.get('/api/files', apiClientConfig);
+          const res = await apiClient.get('/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
             .find({ publishedAt: { $ne: null }, type: 'tileset' })
@@ -413,7 +415,7 @@ describe('Connect to MongoDB', () => {
 
         do {
           apiClientConfig.params.page = pageCount + 1;
-          const res = await apiClient.get('/api/files', apiClientConfig);
+          const res = await apiClient.get('/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
             .find({ publishedAt: { $ne: null }, $text: { $search: keywords } })
@@ -435,7 +437,7 @@ describe('Connect to MongoDB', () => {
 
         do {
           apiClientConfig.params.page = pageCount + 1;
-          const res = await apiClient.get('/api/files', apiClientConfig);
+          const res = await apiClient.get('/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
             .find({ publishedAt: { $ne: null }, authorUsername: randomUsername })
@@ -469,7 +471,7 @@ describe('Connect to MongoDB', () => {
 
         do {
           apiClientConfig.params.page = pageCount + 1;
-          const res = await apiClient.get('/api/files', apiClientConfig);
+          const res = await apiClient.get('/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
             .find({ publishedAt: { $ne: null }, likes: { $elemMatch: { username: randomUser.username } } })
@@ -492,7 +494,7 @@ describe('Connect to MongoDB', () => {
 
         do {
           apiClientConfig.params.page = pageCount + 1;
-          const res = await apiClient.get('/api/files?mode=your_files', apiClientConfig);
+          const res = await apiClient.get('/files?mode=your_files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
             .find({ authorUsername: randomUser.username })
@@ -526,7 +528,7 @@ describe('Connect to MongoDB', () => {
 
         do {
           apiClientConfig.params.page = pageCount + 1;
-          const res = await apiClient.get('/api/files', apiClientConfig);
+          const res = await apiClient.get('/files', apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
             .find({ sharedWith: { $elemMatch: { $eq: randomUser.username } } })
@@ -548,7 +550,7 @@ describe('Connect to MongoDB', () => {
 
         do {
           apiClientConfig.params.page = pageCount + 1;
-          const res = await apiClient.get(`/api/files/${randomFile.id}/recommend`, apiClientConfig);
+          const res = await apiClient.get(`/files/${randomFile.id}/recommend`, apiClientConfig);
           page = res.data.files;
           const expectedPage = await File
             .find({ publishedAt: { $ne: null }, _id: { $ne: randomFile.id }, $text: { $search: randomFile.tags } })

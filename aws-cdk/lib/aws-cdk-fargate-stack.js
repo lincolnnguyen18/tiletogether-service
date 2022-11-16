@@ -2,11 +2,11 @@ const { Stack } = require('aws-cdk-lib');
 const { Vpc, SubnetType } = require('aws-cdk-lib/aws-ec2');
 const { ApplicationLoadBalancer } = require('aws-cdk-lib/aws-elasticloadbalancingv2');
 const { Role, ServicePrincipal, ManagedPolicy } = require('aws-cdk-lib/aws-iam');
-const { Repository } = require('aws-cdk-lib/aws-ecr');
 const { ContainerImage, Cluster } = require('aws-cdk-lib/aws-ecs');
 const { ApplicationLoadBalancedFargateService } = require('aws-cdk-lib/aws-ecs-patterns');
-const { Bucket } = require('aws-cdk-lib/aws-s3');
-const { HttpMethod } = require('aws-cdk-lib/aws-events');
+const { HostedZone, ARecord, RecordTarget } = require('aws-cdk-lib/aws-route53');
+const { Certificate } = require('aws-cdk-lib/aws-certificatemanager');
+const { LoadBalancerTarget } = require('aws-cdk-lib/aws-route53-targets');
 
 class TileTogetherServiceStack extends Stack {
   constructor (scope, id, props) {
@@ -18,15 +18,8 @@ class TileTogetherServiceStack extends Stack {
       subnetConfiguration: [
         {
           cidrMask: 24,
-          name: 'ingress',
+          name: 'public',
           subnetType: SubnetType.PUBLIC,
-          mapPublicIpOnLaunch: true,
-        },
-        {
-          cidrMask: 24,
-          name: 'application',
-          subnetType: SubnetType.PUBLIC,
-          mapPublicIpOnLaunch: true,
         },
       ],
     });
@@ -34,7 +27,7 @@ class TileTogetherServiceStack extends Stack {
     const loadBalancer = new ApplicationLoadBalancer(this, 'tiletogether-service-lb', {
       vpc,
       internetFacing: true,
-      vpcSubnets: { subnetGroupName: 'ingress' },
+      vpcSubnets: { subnetGroupName: 'public' },
     });
 
     const cluster = new Cluster(this, 'tiletogether-service-cluster', {
@@ -52,10 +45,9 @@ class TileTogetherServiceStack extends Stack {
       ],
     });
 
-    // eslint-disable-next-line no-unused-vars
-    const repository = new Repository(this, 'tiletogether-service-repo', {
-      repositoryName: 'tiletogether-service-repo',
-    });
+    // const repository = new Repository(this, 'tiletogether-service-repo', {
+    //   repositoryName: 'tiletogether-service-repo',
+    // });
 
     const taskImageOptions = {
       image: ContainerImage.fromRegistry('amazon/amazon-ecs-sample'),
@@ -74,7 +66,7 @@ class TileTogetherServiceStack extends Stack {
       desiredCount: 1,
       serviceName: 'tiletogether-service',
       // select application subnets for taskSubnets
-      taskSubnets: vpc.selectSubnets({ subnetGroupName: 'application' }),
+      taskSubnets: vpc.selectSubnets({ subnetGroupName: 'public' }),
       loadBalancer,
       capacityProviderStrategies: [
         {
@@ -86,7 +78,7 @@ class TileTogetherServiceStack extends Stack {
     });
 
     fargateService.targetGroup.configureHealthCheck({
-      path: '/api/health',
+      path: '/health',
       enabled: true,
       healthyHttpCodes: '200',
     });
@@ -95,15 +87,58 @@ class TileTogetherServiceStack extends Stack {
     // set cors to allow localhost:3000 for development
     // also allow http://dfq7qlbehwesj.cloudfront.net for production
     // eslint-disable-next-line no-unused-vars
-    const fileDataBucket = new Bucket(this, 'tiletogether-file-data-bucket', {
-      bucketName: 'tiletogether-file-data-bucket',
-      publicReadAccess: false,
-      cors: [
-        {
-          allowedMethods: [HttpMethod.GET],
-          allowedOrigins: ['http://localhost:3000', 'http://dfq7qlbehwesj.cloudfront.net'],
-        },
-      ],
+    // const fileDataBucket = new Bucket(this, process.env.AWS_S3_BUCKET, {
+    //   bucketName: process.env.AWS_S3_BUCKET,
+    //   publicReadAccess: false,
+    //   cors: [
+    //     {
+    //       allowedMethods: [HttpMethod.GET],
+    //       allowedOrigins: [
+    //         'http://localhost:3000',
+    //         'https://www.tiletogether.com',
+    //       ],
+    //     },
+    //   ],
+    // });
+
+    // use api.tiletogether.com as domain name; use route 53 hosted zone to manage domain name
+    const domainName = 'tiletogether.com';
+    const hostedZone = HostedZone.fromHostedZoneAttributes(this, 'tiletogether-service-hosted-zone', {
+      zoneName: domainName,
+      hostedZoneId: 'Z05580483QUOQZ38URHS5',
+    });
+
+    // const certificate = new DnsValidatedCertificate(this, 'tiletogether-static-assets-certificate', {
+    //   domainName: `api.${domainName}`,
+    //   hostedZone,
+    //   region: 'us-east-1',
+    // });
+    const certificate = Certificate.fromCertificateArn(this, 'tiletogether-service-certificate', 'arn:aws:acm:us-east-1:542773719222:certificate/4e83c615-28e6-4864-b48e-f3112ce1222e');
+
+    // create route53 record for api.tiletogether.com to route to load balancer
+    // eslint-disable-next-line no-unused-vars
+    const apiRecord = new ARecord(this, 'tiletogether-service-record', {
+      recordName: `api.${domainName}`,
+      target: RecordTarget.fromAlias(new LoadBalancerTarget(loadBalancer)),
+      zone: hostedZone,
+    });
+
+    // also create an A record from tiletogether.com to route to the load balancer as well
+    // the fargate nodejs server will handle redirecting to www.tiletogether.com
+    // eslint-disable-next-line no-unused-vars
+    const redirectRecord = new ARecord(this, 'tiletogether-service-non-www-record', {
+      recordName: domainName,
+      target: RecordTarget.fromAlias(new LoadBalancerTarget(loadBalancer)),
+      zone: hostedZone,
+    });
+
+    // add listener on port 443 for https
+    // use api.tiletogether.com cert
+    // eslint-disable-next-line no-unused-vars
+    const listener = loadBalancer.addListener('tiletogether-service-listener', {
+      port: 443,
+      certificates: [certificate],
+      defaultTargetGroups: [fargateService.targetGroup],
     });
   }
 }

@@ -60,8 +60,6 @@ const fileSchema = Schema({
   // only used by maps
   tilesets: [new Schema({
     file: { type: Schema.Types.ObjectId, ref: 'File', required: true },
-    // make copy of tileset image url so that map isn't affected if the tileset is updated or deleted
-    imageUrl: { type: String, required: true },
     name: { type: String, required: true },
   })],
   imageUrl: String,

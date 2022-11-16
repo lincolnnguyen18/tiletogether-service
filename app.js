@@ -27,10 +27,24 @@ async function convertQueryParamsToCamelCase (req, _, next) {
   next();
 }
 
-app.use('/api/users', convertQueryParamsToCamelCase, UserRouter);
-app.use('/api/files', convertQueryParamsToCamelCase, FileRouter);
+if (process.env.NODE_ENV === 'production') {
+  // redirect to www.tiletogether.com if subdomain is not api or www
+  app.all('*', (req, res, next) => {
+    if (['www', 'api'].includes(req.headers.host.split('.')[0])) {
+      return next();
+    }
+    // also don't redirect if path is /health
+    if (req.path === '/health') {
+      return next();
+    }
+    res.redirect(301, `https://www.${req.headers.host}${req.url}`);
+  });
+}
 
-app.get('/api/health', (_, res) => {
+app.use('/users', convertQueryParamsToCamelCase, UserRouter);
+app.use('/files', convertQueryParamsToCamelCase, FileRouter);
+
+app.get('/health', (_, res) => {
   res.status(200).send('OK');
 });
 

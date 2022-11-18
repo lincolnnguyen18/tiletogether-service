@@ -29,6 +29,8 @@ FileRouter.delete('/:id', isLoggedIn, deleteFile);
 FileRouter.post('/:id/like', isLoggedIn, setFileLike);
 // add comment to a file
 FileRouter.post('/:id/comment', isLoggedIn, addCommentToFile);
+// add like for a comment
+FileRouter.post('/:id/:comment_id/like', isLoggedIn, setCommentLike);
 
 async function getFiles (req, res) {
   // query = { keywords, tile_dimension, type, sort_by, mode, limit, authorUsername }
@@ -509,6 +511,30 @@ async function addCommentToFile (req, res) {
   }
 
   res.json({ file: editedFile });
+}
+
+async function setCommentLike (req, res) {
+  const { liked } = req.body;
+
+  const file = await File.findById(req.params.id).catch(() => null);
+  if (file == null) {
+    handleError(res, 404);
+    return;
+  }
+
+  try {
+    if (liked) {
+      await File.update({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $push: { 'comments.$.likes': { username: req.user.username, createdAt: Date.now() } }, $inc: { 'comments.$.likeCount': 1 } }, { new: true });
+    } else if (!liked) {
+      await File.update({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $pull: { 'comments.$.likes': { username: req.user.username } }, $inc: { 'comments.$.likeCount': -1 } }, { new: true });
+    }
+  } catch (err) {
+    console.log(err);
+    handleError(res, 500);
+    return;
+  }
+
+  res.json({ message: 'Comment like set to ' + liked });
 }
 
 module.exports = { FileRouter };

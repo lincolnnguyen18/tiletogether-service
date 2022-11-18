@@ -257,7 +257,44 @@ describe('Connect to MongoDB', () => {
         expect(error.status).toBe(404);
       });
     });
+    describe('like a comment', () => {
+      let file, fileInstance, validFileId, commentCount, commentedFile;
 
+      beforeAll(async () => {
+        file = await File.newTestFile(user.username);
+        fileInstance = await File.create(file);
+        validFileId = fileInstance._id;
+        commentCount = fileInstance.commentCount;
+        await apiClient.post(`/files/${validFileId}/comment`, { content: 'test comment' }, apiClientConfig);
+        commentedFile = await File.findOne({ _id: validFileId, 'comments.username': user.username });
+      });
+
+      test('status 200', async () => {
+        // test like comment
+        const comment = commentedFile.comments[commentCount];
+        const likeCount = comment.likeCount;
+        await apiClient.post(`/files/${validFileId}/${comment._id}/like`, { liked: true }, apiClientConfig);
+        const fileWithLikedComment = await File.findOne({ _id: validFileId, 'comments.username': user.username });
+        expect(fileWithLikedComment.comments[commentCount].likes).not.toBeNull();
+        expect(fileWithLikedComment.comments[commentCount].likeCount).toBe(likeCount + 1);
+      });
+      test('status 200 for unliking', async () => {
+        // test unlike comment
+        commentedFile = await File.findOne({ _id: validFileId, 'comments.username': user.username });
+        const comment = commentedFile.comments[commentCount];
+        const likeCount = comment.likeCount;
+        await apiClient.post(`/files/${validFileId}/${comment._id}/like`, { liked: false }, apiClientConfig);
+        const fileWithUnLikedComment = await File.findOne({ _id: validFileId, 'comments.username': user.username });
+        expect(fileWithUnLikedComment.comments[commentCount].likes).toEqual([]);
+        expect(fileWithUnLikedComment.comments[commentCount].likeCount).toBe(likeCount - 1);
+      });
+
+      test('status 404', async () => {
+        const invalidFileId = 'abc';
+        const error = await apiClient.post(`/files/${invalidFileId}/reply`, { content: 'test comment' }, apiClientConfig).catch(err => err.response);
+        expect(error.status).toBe(404);
+      });
+    });
     describe('get a file to view', () => {
       let file, fileInstance, validFileId;
 

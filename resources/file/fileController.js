@@ -161,6 +161,8 @@ async function getFileToView (req, res) {
     }), { expiresIn: 60 * 60 });
   }
 
+  await File.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } }, { new: true });
+
   const pickedFile = _.pick(file, viewFileFieldsFull);
   res.json({ file: pickedFile });
 }

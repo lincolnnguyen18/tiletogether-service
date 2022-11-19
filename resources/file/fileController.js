@@ -414,7 +414,7 @@ async function patchFile (req, res) {
       const imageUrl = await getSignedUrl(s3Client, new GetObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET,
         Key: key,
-      }), { expiresIn: 10 });
+      }), { expiresIn: 60 * 60 });
 
       return {
         file: tileset.file,

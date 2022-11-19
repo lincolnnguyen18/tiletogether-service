@@ -28,11 +28,8 @@ const layerSchema = Schema({
     type: { type: String, required: true },
     value: { type: String, required: true },
   })],
-  // only used by maps
-  tiles: [new Schema({
-    index: { type: Number, required: true },
-    tileset: { type: Schema.Types.ObjectId, ref: 'File', required: true },
-  })],
+  // image for tilesets stored in s3
+  // 2d array guid json string for maps stored in s3
   type: { type: String, required: true, enum: ['layer', 'group'] },
   visible: { type: Boolean, default: true, required: true },
   // set _id manually to allow client side to set id later on (when creating new layers)

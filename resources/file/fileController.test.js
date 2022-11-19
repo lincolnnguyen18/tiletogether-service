@@ -306,6 +306,7 @@ describe('Connect to MongoDB', () => {
       });
 
       test('status 200', async () => {
+        const viewCount = file.views;
         const res = await apiClient.get(`/files/${validFileId}`, apiClientConfig);
 
         const fileFields = Object.keys(res.data.file);
@@ -313,6 +314,8 @@ describe('Connect to MongoDB', () => {
         const viewFileFieldsFull2 = _.without(viewFileFieldsFull, 'imageUrl');
         const difference = _.difference(viewFileFieldsFull2, fileFields);
         expect(difference).toEqual([]);
+        const viewedFile = await File.findOne({ _id: validFileId });
+        expect(viewedFile.views).toEqual(viewCount + 1);
       });
 
       test('status 404', async () => {

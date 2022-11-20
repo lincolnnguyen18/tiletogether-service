@@ -3,8 +3,6 @@ const { faker } = require('@faker-js/faker');
 
 function randomLayer ({ width, height }) {
   const type = _.sample(['group', 'layer']);
-  const imageUrls = _.range(1, 30).map((i) => `/mock-layer-images/${i}.png`);
-  const imageUrl = _.sample(imageUrls);
   let position = { x: 0, y: 0 };
 
   if (type === 'layer') {
@@ -16,7 +14,6 @@ function randomLayer ({ width, height }) {
     type,
     name: faker.lorem.word(),
     layers: [],
-    tilesetLayerUrl: type === 'layer' ? imageUrl : undefined,
     position,
   };
 }

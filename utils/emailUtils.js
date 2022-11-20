@@ -15,7 +15,7 @@ function getPendingEmail (hash) {
 }
 
 function clearExpired (hash) {
-  pendingEmails[hash] = null;
+  delete pendingEmails[hash];
 }
 
 module.exports = { addPendingEmail, getPendingEmail, clearExpired };

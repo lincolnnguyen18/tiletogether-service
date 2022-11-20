@@ -2,11 +2,14 @@ const { identifyIfLoggedIn, isNotLoggedIn } = require('./userMiddleWare.js');
 const express = require('express');
 const { User } = require('./userSchema.js');
 const { mapErrors, handleError } = require('../../utils/errorUtils');
+const { addPendingEmail, getPendingEmail, clearExpired } = require('../../utils/emailUtils.js');
 
 const UserRouter = express.Router();
 
 UserRouter.get('/', identifyIfLoggedIn, getUser);
 UserRouter.post('/', isNotLoggedIn, postUser);
+UserRouter.post('/sendemail', identifyIfLoggedIn, sendEmail);
+UserRouter.post('/reset-password/:hash', identifyIfLoggedIn, resetPassword);
 UserRouter.delete('/', deleteUser);
 
 async function getUser (req, res) {
@@ -34,6 +37,51 @@ async function getUser (req, res) {
     username: userInstance.username,
     email: userInstance.email,
   });
+}
+
+async function sendEmail (req, res) {
+  const { email } = req.body;
+  if (!email) {
+    handleError(res, 401, { email: 'Email address can not be empty' });
+    return;
+  }
+
+  const user = await User.findOne({ email }).catch(() => null);
+  if (!user) {
+    handleError(res, 401, { email: 'Email address does not exist' });
+    return;
+  }
+
+  const hash = addPendingEmail(email);
+  const url = `${process.env.CLIENT_ORIGIN}/users/reset-password/${hash}`;
+  console.log(url);
+
+  res.json('Email Sent Succefully');
+}
+
+async function resetPassword (req, res) {
+  const { password, confirmPassword } = req.body;
+  const hash = req.params.hash;
+
+  if (password !== confirmPassword) {
+    handleError(res, 401, { confirmPassword: 'Passwords do not match' });
+    return;
+  }
+
+  const email = getPendingEmail(hash);
+  if (!email) {
+    handleError(res, 401, { confirmPassword: 'Link is expired' });
+    return;
+  }
+
+  const updateRes = User.updateOne({ email: { $eq: email } }, { password }).catch(err => err);
+  if (updateRes.errors !== null) {
+    handleError(res, 400, mapErrors(updateRes.errors));
+    return;
+  }
+  clearExpired(hash);
+
+  res.json('Password Set Successfully');
 }
 
 async function deleteUser (req, res) {

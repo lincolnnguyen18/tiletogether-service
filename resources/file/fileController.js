@@ -224,7 +224,7 @@ async function getFileToEdit (req, res) {
     if (file.type === 'map') {
       await Promise.all(pickedFile.tilesets.map(async tileset => {
         const key = `${file._id}/${tileset.file}.png`;
-        console.log('key', key);
+        // console.log('key', key);
         const command = new GetObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET,
           Key: key,
@@ -348,6 +348,20 @@ async function patchFile (req, res) {
     }
   }
 
+  if (req.body.description != null) {
+    if (file.authorUsername !== req.user.username) {
+      handleError(res, 401, 'You cannot change the description field unless you are the original author');
+      return;
+    }
+  }
+
+  if (req.body.tags != null) {
+    if (file.authorUsername !== req.user.username) {
+      handleError(res, 401, 'You cannot change the tags field unless you are the original author');
+      return;
+    }
+  }
+
   let newTilesets;
   if (req.body.tilesets != null) {
     if (file.authorUsername !== req.user.username) {
@@ -433,14 +447,15 @@ async function patchFile (req, res) {
 
   let allowabledPatchFields;
   if (req.body.type === 'tileset') {
-    allowabledPatchFields = ['name', 'width', 'height', 'tileDimension', 'sharedWith', 'publishedAt'];
+    allowabledPatchFields = ['name', 'width', 'height', 'tileDimension', 'sharedWith', 'publishedAt', 'description', 'tags'];
   } else {
-    allowabledPatchFields = ['name', 'width', 'height', 'sharedWith', 'publishedAt', 'tilesets'];
+    allowabledPatchFields = ['name', 'width', 'height', 'sharedWith', 'publishedAt', 'tilesets', 'description', 'tags'];
   }
   req.body = _.pick(req.body, allowabledPatchFields);
 
   // update file updatedAt field
   req.body.updatedAt = Date.now();
+  console.log(req.body);
 
   const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).catch(err => err);
   if (updateRes.errors != null) {
@@ -526,9 +541,9 @@ async function setCommentLike (req, res) {
 
   try {
     if (liked) {
-      await File.update({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $push: { 'comments.$.likes': { username: req.user.username, createdAt: Date.now() } }, $inc: { 'comments.$.likeCount': 1 } }, { new: true });
+      await File.findOneAndUpdate({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $push: { 'comments.$.likes': { username: req.user.username, createdAt: Date.now() } }, $inc: { 'comments.$.likeCount': 1 } }, { new: true });
     } else if (!liked) {
-      await File.update({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $pull: { 'comments.$.likes': { username: req.user.username } }, $inc: { 'comments.$.likeCount': -1 } }, { new: true });
+      await File.findOneAndUpdate({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $pull: { 'comments.$.likes': { username: req.user.username } }, $inc: { 'comments.$.likeCount': -1 } }, { new: true });
     }
   } catch (err) {
     console.log(err);

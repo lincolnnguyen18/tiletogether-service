@@ -224,7 +224,7 @@ async function getFileToEdit (req, res) {
     if (file.type === 'map') {
       await Promise.all(pickedFile.tilesets.map(async tileset => {
         const key = `${file._id}/${tileset.file}.png`;
-        console.log('key', key);
+        // console.log('key', key);
         const command = new GetObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET,
           Key: key,
@@ -541,9 +541,9 @@ async function setCommentLike (req, res) {
 
   try {
     if (liked) {
-      await File.update({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $push: { 'comments.$.likes': { username: req.user.username, createdAt: Date.now() } }, $inc: { 'comments.$.likeCount': 1 } }, { new: true });
+      await File.findOneAndUpdate({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $push: { 'comments.$.likes': { username: req.user.username, createdAt: Date.now() } }, $inc: { 'comments.$.likeCount': 1 } }, { new: true });
     } else if (!liked) {
-      await File.update({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $pull: { 'comments.$.likes': { username: req.user.username } }, $inc: { 'comments.$.likeCount': -1 } }, { new: true });
+      await File.findOneAndUpdate({ _id: req.params.id, 'comments._id': req.params.comment_id }, { $pull: { 'comments.$.likes': { username: req.user.username } }, $inc: { 'comments.$.likeCount': -1 } }, { new: true });
     }
   } catch (err) {
     console.log(err);

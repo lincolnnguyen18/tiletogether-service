@@ -137,13 +137,35 @@ async function getFileRecommendations (req, res) {
   page = page == null ? 1 : parseInt(page);
   const skip = (page - 1) * limit;
 
-  const files = await File
+  let files = await File
     .find(findQuery)
     .sort([['likeCount', -1], ['_id', -1]])
     .limit(limit)
     .skip(skip)
     .select(viewFileFields.join(' '))
     .catch(() => []);
+
+  if (files.length === 0) {
+    files = await File
+      .find({ _id: { $ne: file._id }, publishedAt: { $ne: null } })
+      .sort([['likeCount', -1], ['_id', -1]])
+      .limit(limit)
+      .skip(skip)
+      .select(viewFileFields.join(' '))
+      .catch(() => []);
+  }
+
+  // get pre-signed urls for file images
+  // TODO: use cloudfront to cache images and get presigned urls from cloudfront not s3
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    files = await Promise.all(files.map(async file => {
+      const imageUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: `${file._id}/image.png`,
+      }), { expiresIn: 60 * 60 });
+      return { ...file.toObject(), imageUrl };
+    }));
+  }
 
   res.json({ files });
 }

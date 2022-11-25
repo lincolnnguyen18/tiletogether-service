@@ -13,9 +13,9 @@ const FileRouter = express.Router();
 // search files
 FileRouter.get('/', identifyIfLoggedIn, getFiles);
 // get a file to view
-FileRouter.get('/:id', getFileToView);
+FileRouter.get('/:id', identifyIfLoggedIn, getFileToView);
 // get a file to edit
-FileRouter.get('/:id/edit', isLoggedIn, getFileToEdit);
+FileRouter.get('/:id/edit', identifyIfLoggedIn, getFileToEdit);
 // get file recommendations
 FileRouter.get('/:id/recommend', identifyIfLoggedIn, getFileRecommendations);
 // create a file
@@ -155,6 +155,16 @@ async function getFileToView (req, res) {
     return;
   }
 
+  const hasEditAccess = req.user && (await File.countDocuments({
+    _id: file._id,
+    $or: [
+      { authorUsername: req.user.username },
+      { sharedWith: { $elemMatch: { $eq: req.user.username } } },
+    ],
+  }).catch(() => 0) === 1);
+
+  file.hasEditAccess = hasEditAccess ?? false;
+
   // get pre-signed url for file
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
     file.imageUrl = await getSignedUrl(s3Client, new GetObjectCommand({
@@ -176,7 +186,7 @@ async function getFileToEdit (req, res) {
     return;
   }
 
-  const hasAccess = (await File.countDocuments({
+  const hasEditAccess = req.user && (await File.countDocuments({
     _id: file._id,
     $or: [
       { authorUsername: req.user.username },
@@ -184,10 +194,12 @@ async function getFileToEdit (req, res) {
     ],
   }).catch(() => 0) === 1);
 
-  if (!hasAccess) {
-    handleError(res, 404);
-    return;
-  }
+  file.hasEditAccess = hasEditAccess ?? false;
+
+  // if (!hasEditAccess) {
+  //   handleError(res, 404);
+  //   return;
+  // }
 
   const pickedFile = _.pick(file, editFileFields);
   const signedUrls = {};

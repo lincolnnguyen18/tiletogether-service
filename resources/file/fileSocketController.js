@@ -10,7 +10,10 @@ function onLayerPosition (socket, data) {
 
 async function onLayerUpdates (socket, data) {
   const fileId = getSocketFileId(socket);
-  if (!fileId) handleSocketError('Socket is not editing a file');
+  if (!fileId) {
+    handleSocketError('Socket is not editing a file');
+    return;
+  }
   const { newRootLayer, canvasUpdates, layerTileUpdates, layerIds, newImage } = data;
   // console.log(data);
   // console.log('fileId', fileId);

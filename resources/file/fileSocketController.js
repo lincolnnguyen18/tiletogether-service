@@ -2,7 +2,6 @@ const { getSocketFileId, handleSocketError } = require('../../utils/socketUtils'
 const { s3Client } = require('../../utils/s3Utils');
 const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { Layer, File } = require('./fileSchema');
-const _ = require('lodash');
 
 function onLayerPosition (socket, data) {
   const fileId = getSocketFileId(socket);
@@ -12,25 +11,41 @@ function onLayerPosition (socket, data) {
 async function onLayerUpdates (socket, data) {
   const fileId = getSocketFileId(socket);
   if (!fileId) handleSocketError('Socket is not editing a file');
-  const { newRootLayer, canvasUpdates, layerIds, newImage } = data;
+  const { newRootLayer, canvasUpdates, layerTileUpdates, layerIds, newImage } = data;
   // console.log(data);
+  // console.log('fileId', fileId);
 
   const file = await File.findById(fileId).catch(() => null);
-  const currentLayerIds = file.layerIds;
   if (!file) handleSocketError('File does not exist');
+  const currentLayerIds = file.layerIds;
   // console.log('file', file);
 
-  for (const layerId of Object.keys(canvasUpdates)) {
-    const arrayBuffer = canvasUpdates[layerId];
-    const key = `${fileId}/${layerId}.png`;
-    const params = {
-      Bucket: process.env.AWS_S3_BUCKET,
-      Key: key,
-      Body: arrayBuffer,
-    };
-    const command = new PutObjectCommand(params);
-    await s3Client.send(command).catch((err) => handleSocketError(err));
-    // console.log(`saved layer into s3 bucket with key ${key}`);
+  if (file.type === 'tileset') {
+    for (const layerId of Object.keys(canvasUpdates)) {
+      const arrayBuffer = canvasUpdates[layerId];
+      const key = `${fileId}/${layerId}.png`;
+      const params = {
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: key,
+        Body: arrayBuffer,
+      };
+      const command = new PutObjectCommand(params);
+      await s3Client.send(command).catch((err) => handleSocketError(err));
+      // console.log(`saved layer into s3 bucket with key ${key}`);
+    }
+  } else if (file.type === 'map') {
+    for (const layerId of Object.keys(layerTileUpdates)) {
+      const tiles = layerTileUpdates[layerId];
+      const key = `${fileId}/${layerId}.json`;
+      const params = {
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: key,
+        Body: JSON.stringify(tiles),
+      };
+      const command = new PutObjectCommand(params);
+      await s3Client.send(command).catch((err) => handleSocketError(err));
+      // console.log(`saved layer into s3 bucket with key ${key}`);
+    }
   }
 
   // detect deleted layers and delete them from s3
@@ -50,16 +65,12 @@ async function onLayerUpdates (socket, data) {
   }
 
   await Layer.findOneAndReplace({ _id: newRootLayer._id }, newRootLayer, { runValidators: true, new: true }).catch((err) => handleSocketError(err));
-  // update file layerIds if currentLayerIds not equal to layerIds
-  if (_.isEqual(currentLayerIds, layerIds)) {
-    // console.log('no changes to layerIds');
-  } else {
-    await File.findByIdAndUpdate(fileId, {
-      layerIds,
-      updatedAt: Date.now(),
-    }, { runValidators: true, new: true }).catch((err) => handleSocketError(err));
-    // console.log('updated file layerIds');
-  }
+  // update file layerIds
+  await File.findByIdAndUpdate(fileId, {
+    layerIds,
+    updatedAt: Date.now(),
+  }, { runValidators: true, new: true }).catch((err) => handleSocketError(err));
+  // console.log('updated file layerIds');
 
   // update file image
   if (newImage) {

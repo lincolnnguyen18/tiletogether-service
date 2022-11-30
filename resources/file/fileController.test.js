@@ -363,15 +363,16 @@ describe('Connect to MongoDB', () => {
         expect(error.status).toBe(404);
       });
 
-      test('status 403 for not logged in user', async () => {
+      test('status 200 for not logged in user', async () => {
         const error = await apiClient.get(`/files/${validFileId}/edit`).catch(err => err.response);
-        expect(error.status).toBe(403);
+        expect(error.status).toBe(200);
       });
 
-      test('status 404 for not owner', async () => {
+      test('status 200 for not owner', async () => {
         const error = await apiClient.get(`/files/${validFileId}/edit`, apiClientConfig2).catch(err => err.response);
-        expect(error.status).toBe(404);
+        expect(error.status).toBe(200);
       });
+      // modified getFileToEdit to allow all users (needed to allow tmx map exporting)
 
       test('status 200 for shared user', async () => {
         fileInstance.sharedWith.push(user2.username);
@@ -592,11 +593,18 @@ describe('Connect to MongoDB', () => {
           apiClientConfig.params.page = pageCount + 1;
           const res = await apiClient.get(`/files/${randomFile.id}/recommend`, apiClientConfig);
           page = res.data.files;
-          const expectedPage = await File
+          let expectedPage = await File
             .find({ publishedAt: { $ne: null }, _id: { $ne: randomFile.id }, $text: { $search: randomFile.tags } })
             .sort({ likeCount: -1, _id: -1 })
             .skip(pageCount * defaultPageLimit)
             .limit(defaultPageLimit);
+          if (expectedPage.length === 0) {
+            expectedPage = await File
+              .find({ publishedAt: { $ne: null }, _id: { $ne: randomFile.id } })
+              .sort({ likeCount: -1, _id: -1 })
+              .skip(pageCount * defaultPageLimit)
+              .limit(defaultPageLimit);
+          }
           expect(page.map(file => file._id)).toEqual(expectedPage.map(file => file.id));
           if (page.length !== defaultPageLimit) break;
           pageCount++;

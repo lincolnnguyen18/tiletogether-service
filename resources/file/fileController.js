@@ -13,9 +13,9 @@ const FileRouter = express.Router();
 // search files
 FileRouter.get('/', identifyIfLoggedIn, getFiles);
 // get a file to view
-FileRouter.get('/:id', getFileToView);
+FileRouter.get('/:id', identifyIfLoggedIn, getFileToView);
 // get a file to edit
-FileRouter.get('/:id/edit', isLoggedIn, getFileToEdit);
+FileRouter.get('/:id/edit', identifyIfLoggedIn, getFileToEdit);
 // get file recommendations
 FileRouter.get('/:id/recommend', identifyIfLoggedIn, getFileRecommendations);
 // create a file
@@ -137,13 +137,35 @@ async function getFileRecommendations (req, res) {
   page = page == null ? 1 : parseInt(page);
   const skip = (page - 1) * limit;
 
-  const files = await File
+  let files = await File
     .find(findQuery)
     .sort([['likeCount', -1], ['_id', -1]])
     .limit(limit)
     .skip(skip)
     .select(viewFileFields.join(' '))
     .catch(() => []);
+
+  if (files.length === 0) {
+    files = await File
+      .find({ _id: { $ne: file._id }, publishedAt: { $ne: null } })
+      .sort([['likeCount', -1], ['_id', -1]])
+      .limit(limit)
+      .skip(skip)
+      .select(viewFileFields.join(' '))
+      .catch(() => []);
+  }
+
+  // get pre-signed urls for file images
+  // TODO: use cloudfront to cache images and get presigned urls from cloudfront not s3
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+    files = await Promise.all(files.map(async file => {
+      const imageUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: `${file._id}/image.png`,
+      }), { expiresIn: 60 * 60 });
+      return { ...file.toObject(), imageUrl };
+    }));
+  }
 
   res.json({ files });
 }
@@ -154,6 +176,16 @@ async function getFileToView (req, res) {
     handleError(res, 404);
     return;
   }
+
+  const hasEditAccess = req.user && (await File.countDocuments({
+    _id: file._id,
+    $or: [
+      { authorUsername: req.user.username },
+      { sharedWith: { $elemMatch: { $eq: req.user.username } } },
+    ],
+  }).catch(() => 0) === 1);
+
+  file.hasEditAccess = hasEditAccess ?? false;
 
   // get pre-signed url for file
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
@@ -176,7 +208,7 @@ async function getFileToEdit (req, res) {
     return;
   }
 
-  const hasAccess = (await File.countDocuments({
+  const hasEditAccess = req.user && (await File.countDocuments({
     _id: file._id,
     $or: [
       { authorUsername: req.user.username },
@@ -184,10 +216,12 @@ async function getFileToEdit (req, res) {
     ],
   }).catch(() => 0) === 1);
 
-  if (!hasAccess) {
-    handleError(res, 404);
-    return;
-  }
+  file.hasEditAccess = hasEditAccess ?? false;
+
+  // if (!hasEditAccess) {
+  //   handleError(res, 404);
+  //   return;
+  // }
 
   const pickedFile = _.pick(file, editFileFields);
   const signedUrls = {};
@@ -222,6 +256,7 @@ async function getFileToEdit (req, res) {
     // for maps only
     // get presigned url for all tilesets
     if (file.type === 'map') {
+      // get tileset images
       await Promise.all(pickedFile.tilesets.map(async tileset => {
         const key = `${file._id}/${tileset.file}.png`;
         // console.log('key', key);
@@ -230,6 +265,17 @@ async function getFileToEdit (req, res) {
           Key: key,
         });
         signedUrls[tileset.file] = await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 });
+      }));
+
+      // get layer tiles
+      await Promise.all(pickedFile.layerIds.map(async layerId => {
+        const key = `${file._id}/${layerId}.json`;
+        // console.log('key', key);
+        const command = new GetObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: key,
+        });
+        signedUrls[layerId] = await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 });
       }));
     }
   }
@@ -380,8 +426,7 @@ async function patchFile (req, res) {
     const oldTilesets = file.tilesets.map(tileset => tileset.file.toString());
     const givenTilesets = req.body.tilesets.map(tileset => tileset.file);
     const addedTilesets = _.difference(givenTilesets, oldTilesets);
-
-    console.log('addTilesets', addedTilesets);
+    // console.log('addTilesets', addedTilesets);
 
     // verify all new tilesets exist
     const tilesetsExist = await File.countDocuments({ _id: { $in: addedTilesets }, type: 'tileset' }).catch(() => false) === addedTilesets.length;
@@ -392,7 +437,7 @@ async function patchFile (req, res) {
 
     // determine deleted tilesets and delete them from s3
     const deletedTilesets = _.difference(oldTilesets, givenTilesets);
-    console.log('deleteTilesets', deletedTilesets);
+    // console.log('deleteTilesets', deletedTilesets);
     await Promise.all(deletedTilesets.map(async tilesetId => {
       const command = new DeleteObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET,
@@ -413,7 +458,7 @@ async function patchFile (req, res) {
       // if new tileset, duplicate image in s3
       const key = `${file._id}/${tilesetFile._id}.png`;
       if (addedTilesets.includes(tilesetFile._id.toString())) {
-        console.log('newKey', key);
+        // console.log('newKey', key);
         // use CopyObject to duplicate the tileset image in s3
         const copyCommand = new CopyObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET,
@@ -421,7 +466,7 @@ async function patchFile (req, res) {
           Key: key,
         });
         await s3Client.send(copyCommand);
-        console.log(`Copied ${tilesetFile._id}/image.png to ${key}`);
+        // console.log(`Copied ${tilesetFile._id}/image.png to ${key}`);
       }
 
       // get signed url for new tileset image
@@ -437,7 +482,7 @@ async function patchFile (req, res) {
       };
     }));
 
-    console.log('newTilesets', newTilesets);
+    // console.log('newTilesets', newTilesets);
   }
 
   // set req.body.tilesets to newTilesets but without imageUrl field (since this will be generated on demand using presigned urls)
@@ -455,7 +500,7 @@ async function patchFile (req, res) {
 
   // update file updatedAt field
   req.body.updatedAt = Date.now();
-  console.log(req.body);
+  // console.log(req.body);
 
   const updateRes = await File.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).catch(err => err);
   if (updateRes.errors != null) {

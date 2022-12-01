@@ -22,8 +22,8 @@ function clearExpired (hash) {
 const sesClient = new SESClient({
   region: 'us-east-1',
   credentials: {
-    accessKeyId: 'AKIA2MWUFZKM6UC5E47E',
-    secretAccessKey: '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',
+    accessKeyId: 'AKIAX4X6VWC3BEZWRTBD',
+    secretAccessKey: '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',
   },
 });
 

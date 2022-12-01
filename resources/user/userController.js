@@ -2,7 +2,7 @@ const { identifyIfLoggedIn, isNotLoggedIn } = require('./userMiddleWare.js');
 const express = require('express');
 const { User } = require('./userSchema.js');
 const { mapErrors, handleError } = require('../../utils/errorUtils');
-const { addPendingEmail, getPendingEmail, clearExpired, sendSESEmail } = require('../../utils/emailUtils.js');
+const { addPendingEmail, getPendingEmail, clearExpired, sendSESEmail, verifyUserEmail } = require('../../utils/emailUtils.js');
 
 const UserRouter = express.Router();
 
@@ -79,7 +79,6 @@ async function resetPassword (req, res) {
   }
 
   const updateRes = await User.updateOne({ email: { $eq: email } }, { password }, { runValidators: true }).catch(err => err);
-  console.log(updateRes);
   if (updateRes.errors) {
     handleError(res, 400, mapErrors(updateRes.errors));
     return;
@@ -128,6 +127,15 @@ async function postUser (req, res) {
 
   if (Object.keys(errors).length > 0) {
     handleError(res, 400, mapErrors(createRes.errors, errors));
+    return;
+  }
+
+  // Only verify email with AWS ses when email passes validator in User Schema
+  try {
+    await verifyUserEmail(email);
+  } catch (err) {
+    errors.email = 'Failed to verify email';
+    handleError(res, 400, errors);
     return;
   }
 

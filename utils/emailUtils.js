@@ -1,13 +1,5 @@
 const { hashCode } = require('./stringUtils');
-const { SESClient } = require('@aws-sdk/client-ses-node/SESClient');
-
-const sesClient = new SESClient({
-  region: 'us-east-1',
-  credentials: {
-    accessKeyId: 'AKIAX4X6VWC3BEZWRTBD',
-    secretAccessKey: '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',
-  },
-});
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 
 const expirationTime = 60000;
 const pendingEmails = {};
@@ -27,9 +19,17 @@ function clearExpired (hash) {
   delete pendingEmails[hash];
 }
 
+const sesClient = new SESClient({
+  region: 'us-east-1',
+  credentials: {
+    accessKeyId: 'AKIA2MWUFZKM6UC5E47E',
+    secretAccessKey: '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',
+  },
+});
+
 function sendSESEmail (from, to, url, callback) {
   // Create sendEmail params
-  const params = {
+  const command = new SendEmailCommand({
     Destination: {
       CcAddresses: [],
       ToAddresses: [to],
@@ -63,12 +63,15 @@ function sendSESEmail (from, to, url, callback) {
     },
     Source: from,
     ReplyToAddresses: [from],
-  };
+  });
 
-  // Create the promise and SES service object
-  const sendPromise = sesClient.sendEmail(params).promise();
-  // Handle promise's fulfilled/rejected states
-  sendPromise.then(data => callback(data, null)).catch(err => callback(null, err));
+  sesClient.send(command)
+    .then((data) => {
+      callback(data, null);
+    })
+    .catch((error) => {
+      callback(null, error);
+    });
 };
 
 module.exports = { addPendingEmail, getPendingEmail, clearExpired, sendSESEmail };

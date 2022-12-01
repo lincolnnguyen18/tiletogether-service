@@ -57,7 +57,6 @@ async function sendEmail (req, res) {
 
   sendSESEmail(process.env.SES_SENDER_EMAIL, email, url, (_, err) => { // Ignore the first parameter(data): it's a message id
     if (err !== null) {
-      console.log(err);
       handleError(res, 401, { email: 'Invalid Email Address! Failed to send an email' });
       return;
     }

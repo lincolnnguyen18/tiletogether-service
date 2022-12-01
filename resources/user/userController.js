@@ -2,7 +2,7 @@ const { identifyIfLoggedIn, isNotLoggedIn } = require('./userMiddleWare.js');
 const express = require('express');
 const { User } = require('./userSchema.js');
 const { mapErrors, handleError } = require('../../utils/errorUtils');
-const { addPendingEmail, getPendingEmail, clearExpired } = require('../../utils/emailUtils.js');
+const { addPendingEmail, getPendingEmail, clearExpired, sendSESEmail } = require('../../utils/emailUtils.js');
 
 const UserRouter = express.Router();
 
@@ -54,9 +54,14 @@ async function sendEmail (req, res) {
 
   const hash = addPendingEmail(email);
   const url = `${process.env.CLIENT_ORIGIN}/users/reset-password/${hash}`;
-  console.log(url);
 
-  res.json('Email Sent Succefully');
+  sendSESEmail(process.env.SES_SENDER_EMAIL, email, url, (_, err) => { // Ignore the first parameter(data): it's a message id
+    if (err !== null) {
+      res.json(err);
+      return;
+    }
+    res.json('Email Sent Succefully');
+  });
 }
 
 async function resetPassword (req, res) {

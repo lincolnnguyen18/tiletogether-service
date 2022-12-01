@@ -42,15 +42,10 @@ function sendSESEmail (from, to, url, callback) {
                 <html>
                 <body>
                 <p>Dear TileTogether User, </p>
-                <br>
                 <p>We have received a request from you to reset your password. Please follow the link below to change your password:</p>
-                <br>
                 <a href="${url}">${url}</a>
-                <br>
                 <p>If you did not request this password change, please ignore this email.</p>
-                <br>
-                <p>Thank You</p>
-                <br>
+                <p>Sincerely,</p>
                 <p>Your Friends At TileTogether</p>
                 </body>
                 </html>`,

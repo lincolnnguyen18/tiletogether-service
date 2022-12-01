@@ -8,8 +8,8 @@ const UserRouter = express.Router();
 
 UserRouter.get('/', identifyIfLoggedIn, getUser);
 UserRouter.post('/', isNotLoggedIn, postUser);
-UserRouter.post('/sendemail', identifyIfLoggedIn, sendEmail);
-UserRouter.post('/reset-password/:hash', identifyIfLoggedIn, resetPassword);
+UserRouter.post('/sendemail', isNotLoggedIn, sendEmail);
+UserRouter.post('/password', isNotLoggedIn, resetPassword);
 UserRouter.delete('/', deleteUser);
 
 async function getUser (req, res) {
@@ -53,11 +53,12 @@ async function sendEmail (req, res) {
   }
 
   const hash = addPendingEmail(email);
-  const url = `${process.env.CLIENT_ORIGIN}/users/reset-password/${hash}`;
+  const url = `${process.env.CLIENT_ORIGIN}/users/password/${hash}`;
 
   sendSESEmail(process.env.SES_SENDER_EMAIL, email, url, (_, err) => { // Ignore the first parameter(data): it's a message id
     if (err !== null) {
-      res.json(err);
+      console.log(err);
+      handleError(res, 401, { email: 'Invalid Email Address! Failed to send an email' });
       return;
     }
     res.json('Email Sent Succefully');
@@ -65,8 +66,7 @@ async function sendEmail (req, res) {
 }
 
 async function resetPassword (req, res) {
-  const { password, confirmPassword } = req.body;
-  const hash = req.params.hash;
+  const { password, confirmPassword, hash } = req.body;
 
   if (password !== confirmPassword) {
     handleError(res, 401, { confirmPassword: 'Passwords do not match' });
@@ -79,8 +79,9 @@ async function resetPassword (req, res) {
     return;
   }
 
-  const updateRes = User.updateOne({ email: { $eq: email } }, { password }).catch(err => err);
-  if (updateRes.errors !== null) {
+  const updateRes = await User.updateOne({ email: { $eq: email } }, { password }, { runValidators: true }).catch(err => err);
+  console.log(updateRes);
+  if (updateRes.errors) {
     handleError(res, 400, mapErrors(updateRes.errors));
     return;
   }

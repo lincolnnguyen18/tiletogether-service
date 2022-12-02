@@ -1,5 +1,5 @@
 const { hashCode } = require('./stringUtils');
-const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+const { SESClient, VerifyEmailIdentityCommand, SendEmailCommand, VerifyDomainIdentityCommand } = require('@aws-sdk/client-ses');
 
 const expirationTime = 60000;
 const pendingEmails = {};
@@ -69,4 +69,14 @@ function sendSESEmail (from, to, url, callback) {
     });
 };
 
-module.exports = { addPendingEmail, getPendingEmail, clearExpired, sendSESEmail };
+async function verifyUserEmail (email) {
+  const command = new VerifyEmailIdentityCommand({ EmailAddress: email });
+  return sesClient.send(command);
+};
+
+async function verifyEmailDomain (email) {
+  const command = new VerifyDomainIdentityCommand({ Domain: email.split('@')[1] });
+  return sesClient.send(command);
+}
+
+module.exports = { addPendingEmail, getPendingEmail, clearExpired, sendSESEmail, verifyUserEmail, verifyEmailDomain };

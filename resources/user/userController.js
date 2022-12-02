@@ -2,7 +2,7 @@ const { identifyIfLoggedIn, isNotLoggedIn } = require('./userMiddleWare.js');
 const express = require('express');
 const { User } = require('./userSchema.js');
 const { mapErrors, handleError } = require('../../utils/errorUtils');
-const { addPendingEmail, getPendingEmail, clearExpired, sendSESEmail } = require('../../utils/emailUtils.js');
+const { addPendingEmail, getPendingEmail, clearExpired, sendSESEmail, verifyUserEmail } = require('../../utils/emailUtils.js');
 
 const UserRouter = express.Router();
 
@@ -41,14 +41,19 @@ async function getUser (req, res) {
 
 async function sendEmail (req, res) {
   const { email } = req.body;
+  const errors = {};
+
   if (!email) {
-    handleError(res, 401, { email: 'Email address can not be empty' });
-    return;
+    errors.email = 'Email address can not be empty';
   }
 
   const user = await User.findOne({ email }).catch(() => null);
   if (!user) {
-    handleError(res, 401, { email: 'Email address does not exist' });
+    errors.email = 'Email address does not exist';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    handleError(res, 400, errors);
     return;
   }
 
@@ -57,7 +62,8 @@ async function sendEmail (req, res) {
 
   sendSESEmail(process.env.SES_SENDER_EMAIL, email, url, (_, err) => { // Ignore the first parameter(data): it's a message id
     if (err !== null) {
-      handleError(res, 401, { email: 'Invalid Email Address! Failed to send an email' });
+      errors.email = 'Invalid Email Address! Failed to send an email';
+      handleError(res, 400, errors);
       return;
     }
     res.json('Email Sent Succefully');
@@ -66,22 +72,27 @@ async function sendEmail (req, res) {
 
 async function resetPassword (req, res) {
   const { password, confirmPassword, hash } = req.body;
+  let errors = {};
 
   if (password !== confirmPassword) {
-    handleError(res, 401, { confirmPassword: 'Passwords do not match' });
-    return;
+    errors.confirmPassword = 'Passwords do not match';
   }
 
   const email = getPendingEmail(hash);
   if (!email) {
-    handleError(res, 401, { confirmPassword: 'Link is expired' });
+    errors.confirmPassword = 'URL is expired';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    handleError(res, 400, errors);
     return;
   }
 
   const updateRes = await User.updateOne({ email: { $eq: email } }, { password }, { runValidators: true }).catch(err => err);
-  console.log(updateRes);
-  if (updateRes.errors) {
-    handleError(res, 400, mapErrors(updateRes.errors));
+  errors = mapErrors(updateRes.errors, errors);
+
+  if (Object.keys(errors).length > 0) {
+    handleError(res, 400, mapErrors(updateRes.errors, errors));
     return;
   }
   clearExpired(hash);
@@ -128,6 +139,15 @@ async function postUser (req, res) {
 
   if (Object.keys(errors).length > 0) {
     handleError(res, 400, mapErrors(createRes.errors, errors));
+    return;
+  }
+
+  // Only verify email with AWS ses when email passes validator in User Schema
+  try {
+    await verifyUserEmail(email);
+  } catch (err) {
+    errors.email = 'Failed to verify email';
+    handleError(res, 400, errors);
     return;
   }
 

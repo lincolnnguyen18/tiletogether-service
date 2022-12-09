@@ -22,8 +22,8 @@ function clearExpired (hash) {
 const sesClient = new SESClient({
   region: 'us-east-1',
   credentials: {
-    accessKeyId: 'AKIAX4X6VWC3BEZWRTBD',
-    secretAccessKey: '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',
+    accessKeyId: 'AKIAX4X6VWC3FTYWGOHV',
+    secretAccessKey: '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',
   },
 });
 
@@ -67,12 +67,12 @@ function sendSESEmail (from, to, url, callback) {
     .catch((error) => {
       callback(null, error);
     });
-};
+}
 
 async function verifyUserEmail (email) {
   const command = new VerifyEmailIdentityCommand({ EmailAddress: email });
   return sesClient.send(command);
-};
+}
 
 async function verifyEmailDomain (email) {
   const command = new VerifyDomainIdentityCommand({ Domain: email.split('@')[1] });

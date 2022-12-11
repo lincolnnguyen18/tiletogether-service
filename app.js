@@ -19,6 +19,7 @@ const io = new Server(server, { cors: { origin: process.env.CLIENT_ORIGIN, crede
 app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/play-game', express.static('game'));
 
 async function convertQueryParamsToCamelCase (req, _, next) {
   if (req.query) {

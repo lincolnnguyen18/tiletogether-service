@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Phaser Game</title>
+  <script src="phaser.min.js"></script>
+  <style>
+    html, body, canvas {
+      margin: 0 !important;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+<div id='phaser-example'></div>
+<script>
+  var config = {
+    type: Phaser.CANVAS,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    backgroundColor: '#2d2d2d',
+    parent: 'phaser-example',
+    pixelArt: true,
+    zoom: 1,
+    scene: {
+      preload: preload,
+      create: create,
+      update: update
+    },
+    physics: {
+      default: 'arcade',
+    },
+    scale: {
+      mode: Phaser.Scale.RESIZE,
+      parent: 'game-content',
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    },
+  };
+
+  var game = new Phaser.Game(config);
+
+  function preload ()
+  {
+    // load map
+    this.load.image('grass', 'assets/map/tilesets/grass.png');
+    this.load.image('trees', 'assets/map/tilesets/trees.png');
+    this.load.tilemapTiledJSON('map', 'assets/map/map.json');
+
+    // load player
+    this.load.spritesheet('rabbit', 'assets/sprites/rabbit.png', { frameWidth: 48, frameHeight: 48 });
+    this.cursors = this.input.keyboard.createCursorKeys();
+  }
+
+  function create ()
+  {
+    var map = this.make.tilemap({ key: 'map' });
+
+    // The first parameter is the name of the tileset in Tiled and the second parameter is the key
+    // of the tileset image used when loading the file in preload.
+    var grass = map.addTilesetImage('grass', 'grass');
+    var trees = map.addTilesetImage('trees', 'trees');
+    // var tiles = map.addTilesetImage('cybernoid', 'tiles');
+
+    // You can load a layer from the map using the layer name from Tiled, or by using the layer
+    // index (0 in this case).
+    let layers = [];
+    for (let i = 0; i < map.layers.length; i++) {
+      layers.push(map.createLayer(i, [grass, trees], 0, 0));
+    }
+    // make layers[1] the collision layer
+    layers[1].setCollisionByExclusion([-1], true);
+
+    // const debugGraphics = this.add.graphics().setAlpha(0.75);
+    // layers[1].renderDebug(debugGraphics, {
+    //   tileColor: null, // Color of non-colliding tiles
+    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255), // Color of colliding tiles
+    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255) // Color of colliding face edges
+    // });
+
+    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+
+    const keys = [
+      'idle down',
+      'idle up',
+      'idle left',
+      'idle right',
+      'walking down',
+      'walking up',
+      'walking right',
+      'walking left',
+      'running down',
+      'running up',
+      'running right',
+      'running left',
+    ];
+    // each animation has 7 frames
+    for (let i = 0; i <= keys.length; i++) {
+      this.anims.create({
+        key: keys[i],
+        frames: this.anims.generateFrameNumbers('rabbit', { frames: Array.from({ length: 7 }, (_, j) => i * 8 + j) }),
+        frameRate: 8,
+        repeat: -1
+      });
+    }
+
+    this.player = this.physics.add.sprite(100, 100, 'rabbit');
+    this.player.setCollideWorldBounds(true);
+    this.player.anims.play('idle down');
+    // adjust player collision box
+    this.player.body.setSize(16, 16);
+    this.player.directions = [];
+
+    this.cameras.main.startFollow(this.player);
+    this.cameras.main.setZoom(5);
+
+    this.physics.add.collider(this.player, layers[1]);
+  }
+
+  function getRelativePositionToCanvas(object, camera) {
+    return {
+      x: (object.x - camera.worldView.x) * camera.zoom,
+      y: (object.y - camera.worldView.y) * camera.zoom
+    };
+  }
+
+  function update (time, delta)
+  {
+    this.player.setVelocity(0);
+    let currentAnimKey = this.player.anims.currentAnim.key;
+    let isDown = ['up', 'down', 'left', 'right', 'shift'].reduce((acc, key) => {
+      acc[key] = this.cursors[key].isDown;
+      return acc;
+    }, {});
+
+    ['left', 'right', 'up', 'down'].forEach(d => {
+      if (isDown[d]) {
+        if (!this.player.directions.includes(d)) {
+          this.player.directions.push(d);
+        }
+      } else {
+        this.player.directions = this.player.directions.filter(dir => dir !== d);
+      }
+    });
+
+    // console.log('directions', this.player.directions);
+
+    const walkingSpeed = 80;
+    const runningSpeed = 160;
+    ['left', 'right', 'up', 'down'].forEach(d => {
+      if (this.player.directions[this.player.directions.length - 1] === d) {
+        if (!isDown.shift) {
+          this.player.setVelocityX(walkingSpeed * (d === 'left' ? -1 : d === 'right' ? 1 : 0));
+          this.player.setVelocityY(walkingSpeed * (d === 'up' ? -1 : d === 'down' ? 1 : 0));
+          this.player.anims.play(`walking ${d}`, true);
+        } else {
+          this.player.setVelocityX(runningSpeed * (d === 'left' ? -1 : d === 'right' ? 1 : 0));
+          this.player.setVelocityY(runningSpeed * (d === 'up' ? -1 : d === 'down' ? 1 : 0));
+          this.player.anims.play(`running ${d}`, true);
+        }
+      }
+    });
+    if (this.player.directions.length === 0) {
+      this.player.anims.play(`idle ${currentAnimKey.split(' ')[1]}`, true);
+    }
+    let direction = currentAnimKey.split(' ')[1];
+    if (['left', 'right'].includes(direction)) {
+      this.player.body.setSize(8, 16);
+    } else {
+      this.player.body.setSize(16, 16);
+    }
+  }
+</script>
+
+</body>
+</html>

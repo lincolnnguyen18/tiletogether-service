@@ -1,7 +1,7 @@
 const { hashCode } = require('./stringUtils');
 const { SESClient, VerifyEmailIdentityCommand, SendEmailCommand, VerifyDomainIdentityCommand } = require('@aws-sdk/client-ses');
 
-const expirationTime = 60000;
+const expirationTime = 600000;
 const pendingEmails = {};
 
 function addPendingEmail (email) {
